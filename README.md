@@ -25,11 +25,29 @@ Other scripts:
 | `npm run lint` | oxlint |
 | `npm run check` | Typecheck + lint + tests |
 
+## Deploying
+
+The app is static files, so any host works. It is set up for **Netlify**:
+
+1. In Netlify, **Add new site → Import an existing project**, and pick this repo.
+2. Accept the detected settings — `netlify.toml` already specifies the build command (`npm run
+   build`), the publish directory (`dist`) and Node 22.
+3. Deploy. Every push to `main` rebuilds and ships automatically.
+
+No GitHub Actions workflow is involved in deployment — Netlify's Git integration handles it. The
+workflow in `.github/workflows/ci.yml` only runs typecheck, lint, tests and a production build on
+pushes and pull requests.
+
+`netlify.toml` also sets the response headers that matter for a PWA: `sw.js` and the manifest are
+served uncached so clients always pick up a new build, fingerprinted assets under `/assets/` are
+cached forever, and a strict Content-Security-Policy locks the page to same-origin (the app makes
+no network requests at runtime, so nothing needs relaxing).
+
 ### Installing it on your phone
 
-Build and serve the app over HTTPS (any static host works — the `dist/` folder is the whole app),
-open it in the phone's browser, then use **Add to Home Screen**. It runs full-screen and works
-offline; a service worker precaches everything.
+Open the deployed URL in the phone's browser and use **Add to Home Screen**. It runs full-screen
+and works offline; a service worker precaches everything. HTTPS is required for the service worker,
+which Netlify provides automatically.
 
 Because data lives in the browser's local storage, the installed app and the browser tab share the
 same data on one device, but nothing syncs between devices. **Settings → Export backup** writes a

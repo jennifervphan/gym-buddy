@@ -1,0 +1,28 @@
+# Checks only. Deployment is handled by Netlify's own Git integration, which
+# builds every push to main independently of this workflow.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    name: Typecheck, lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # tsc -b && oxlint && vitest run
+      - run: npm run check
+
+      # Catches anything that only breaks in a production build.
+      - run: npm run build

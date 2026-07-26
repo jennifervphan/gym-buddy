@@ -1,0 +1,44 @@
+# Netlify builds and deploys straight from Git — connect the repo once in the
+# Netlify UI and every push to main ships. No CI workflow is involved.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# The app uses hash routing (#/progress), so every request already resolves to
+# "/" and this rule is never strictly needed. It is here so deep links keep
+# working if the router is ever switched to real paths.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# The service worker decides when clients pick up a new build, so it must never
+# be served from cache — otherwise an old app can pin itself indefinitely.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Vite fingerprints these filenames, so a given URL's contents never change.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# No account, no analytics, no runtime network calls — lock the page down to
+# match. 'unsafe-inline' covers the small inline styles the app sets on elements.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
