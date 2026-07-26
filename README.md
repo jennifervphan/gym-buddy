@@ -27,21 +27,36 @@ Other scripts:
 
 ## Deploying
 
-The app is static files, so any host works. It is set up for **Netlify**:
+The app is static files, so any host works. It is set up to deploy to **Netlify from GitHub
+Actions, gated on the tests** — `.github/workflows/ci.yml` runs typecheck, lint and the test suite,
+and only deploys if they all pass. A red build never reaches the live site.
 
-1. In Netlify, **Add new site → Import an existing project**, and pick this repo.
-2. Accept the detected settings — `netlify.toml` already specifies the build command (`npm run
-   build`), the publish directory (`dist`) and Node 22.
-3. Deploy. Every push to `main` rebuilds and ships automatically.
+### One-time setup
 
-No GitHub Actions workflow is involved in deployment — Netlify's Git integration handles it. The
-workflow in `.github/workflows/ci.yml` only runs typecheck, lint, tests and a production build on
-pushes and pull requests.
+1. **Create the Netlify site.** In Netlify, **Add new site → Import an existing project**, pick this
+   repo, and let the first deploy run.
+2. **Turn off Netlify's automatic builds**: Site configuration → Build & deploy → Continuous
+   deployment → **Stop builds**. This matters — if Netlify keeps building on push, it deploys in
+   parallel with the workflow and the test gate is bypassed.
+3. **Add two repository secrets** under Settings → Secrets and variables → Actions:
 
-`netlify.toml` also sets the response headers that matter for a PWA: `sw.js` and the manifest are
-served uncached so clients always pick up a new build, fingerprinted assets under `/assets/` are
-cached forever, and a strict Content-Security-Policy locks the page to same-origin (the app makes
-no network requests at runtime, so nothing needs relaxing).
+   | Secret | Where to get it |
+   |---|---|
+   | `NETLIFY_AUTH_TOKEN` | Netlify → User settings → Applications → **New access token** |
+   | `NETLIFY_SITE_ID` | Netlify → Site configuration → General → **Site ID** |
+
+After that, every push to `main` runs the checks and deploys on success. Pull requests run the
+checks only. The deployed files are the exact artifact the tests ran against, not a rebuild.
+
+### Response headers
+
+`public/_headers` and `public/_redirects` are copied into `dist/` by Vite, so they ship inside the
+deployed folder and apply regardless of how the deploy happens. They set what matters for a PWA:
+`sw.js` and the manifest served uncached so clients always pick up a new build, fingerprinted
+assets under `/assets/` cached indefinitely, and a strict Content-Security-Policy locking the page
+to same-origin (the app makes no network requests at runtime, so nothing needs relaxing).
+
+`netlify.toml` holds only the build settings, used if Netlify-side builds are ever re-enabled.
 
 ### Installing it on your phone
 

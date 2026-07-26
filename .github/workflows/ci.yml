@@ -1,11 +1,23 @@
-# Checks only. Deployment is handled by Netlify's own Git integration, which
-# builds every push to main independently of this workflow.
-name: CI
+# Tests gate the deploy: `deploy` needs `check`, so a red build never ships.
+#
+# This means Netlify must NOT also build on push — switch off automatic builds
+# in Site configuration → Build & deploy → Continuous deployment → Stop builds,
+# or Netlify will deploy in parallel and bypass the gate.
+#
+# Requires two repository secrets (Settings → Secrets and variables → Actions):
+#   NETLIFY_AUTH_TOKEN  Netlify → User settings → Applications → personal access token
+#   NETLIFY_SITE_ID     Netlify → Site configuration → General → Site ID
+name: CI and deploy
 
 on:
   push:
     branches: [main]
   pull_request:
+
+# Never let two deploys of the same branch race each other.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -26,3 +38,50 @@ jobs:
 
       # Catches anything that only breaks in a production build.
       - run: npm run build
+
+      # Deploy the exact bits that were just tested, rather than rebuilding.
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
+
+  deploy:
+    name: Deploy to Netlify
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Deploy
+        id: deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NETLIFY_AUTH_TOKEN:-}" ] || [ -z "${NETLIFY_SITE_ID:-}" ]; then
+            echo "::error::NETLIFY_AUTH_TOKEN and NETLIFY_SITE_ID must be set as repository secrets."
+            exit 1
+          fi
+          npx --yes netlify-cli@27 deploy \
+            --prod \
+            --dir=dist \
+            --site="$NETLIFY_SITE_ID" \
+            --message="${GITHUB_SHA::7} — ${GITHUB_REF_NAME}" \
+            --json > deploy.json
+          # For a --prod deploy, `url` is the live site; `deploy_url` is the
+          # immutable per-deploy address.
+          echo "url=$(node -p 'const d=require("./deploy.json"); d.url || d.deploy_url')" >> "$GITHUB_OUTPUT"
+
+      - name: Summarise
+        run: echo "Deployed ${GITHUB_SHA::7} to ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

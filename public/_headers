@@ -1,0 +1,29 @@
+# Response headers, applied by Netlify to whatever is in the publish directory.
+#
+# These live here rather than in netlify.toml because Vite copies public/ into
+# dist/, so they ship inside the deployed folder and apply no matter how the
+# deploy happens — the CI workflow uploading a prebuilt dist/, or a Netlify Git
+# build if that is ever re-enabled.
+
+# The service worker decides when clients pick up a new build, so it must never
+# be served from cache — otherwise an old app can pin itself indefinitely.
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/registerSW.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Vite fingerprints these filenames, so a given URL's contents never change.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# No account, no analytics, no runtime network calls — lock the page down to
+# match. 'unsafe-inline' for styles covers the inline styles React sets on
+# elements; there are no inline scripts.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'

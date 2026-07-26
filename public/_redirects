@@ -1,0 +1,4 @@
+# The app uses hash routing (#/progress), so every request already resolves to
+# "/" and this rule is never strictly needed. It is here so deep links keep
+# working if the router is ever switched to real paths.
+/*  /index.html  200
