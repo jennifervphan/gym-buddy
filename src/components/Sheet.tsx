@@ -1,0 +1,54 @@
+import { useEffect } from 'react'
+import type { ReactNode } from 'react'
+import { IconX } from './Icons'
+
+/**
+ * Bottom sheet used for every modal flow. Closes on backdrop click and Escape,
+ * and locks background scroll while open.
+ */
+export function Sheet({
+  title,
+  onClose,
+  children,
+  footer,
+}: {
+  title: string
+  onClose: () => void
+  children: ReactNode
+  footer?: ReactNode
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = previous
+    }
+  }, [onClose])
+
+  return (
+    <div
+      className="sheet-backdrop"
+      role="presentation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
+        <div className="sheet-handle" />
+        <div className="sheet-head">
+          <h2>{title}</h2>
+          <button type="button" className="btn icon ghost" onClick={onClose} aria-label="Close">
+            <IconX />
+          </button>
+        </div>
+        {children}
+        {footer}
+      </div>
+    </div>
+  )
+}
