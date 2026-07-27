@@ -822,6 +822,16 @@ textarea {
   }
 }
 
+/*
+ * Children must not shrink. A flex item's automatic minimum size only applies
+ * while its overflow is visible, so a child that clips (`.card.flush`) would
+ * otherwise collapse to fit the sheet and hide its own overflowing content
+ * instead of letting the sheet scroll.
+ */
+.sheet > * {
+  flex-shrink: 0;
+}
+
 .sheet-handle {
   width: 38px;
   height: 4px;
@@ -830,11 +840,18 @@ textarea {
   margin: 6px auto 2px;
 }
 
+/* Keeps the title and close button reachable through a long list. */
 .sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 6px 0 10px;
+  margin-top: -6px;
+  background: var(--plane);
 }
 
 /* ---------- Charts ---------- */
