@@ -1,19 +1,15 @@
-# Build settings only.
+# Netlify builds and deploys from Git — every push to main ships.
 #
-# Deploys are driven by .github/workflows/ci.yml, which deploys the built site
-# with the Netlify CLI only after typecheck, lint and tests pass. Netlify's own
-# automatic Git builds should be switched off (Site configuration → Build &
-# deploy → Continuous deployment → Stop builds), otherwise Netlify would also
-# build on push and bypass that gate.
-#
-# This section is kept so a Netlify-side build still works correctly if
-# automatic builds are ever turned back on.
+# The build command runs the checks first, so the tests genuinely guard the
+# deploy: if typecheck, lint or any test fails, the build fails and the live
+# site keeps serving the last good deploy. GitHub Actions reports the same
+# checks on pull requests, but it is this command that gates what ships.
 #
 # Response headers and redirects live in public/_headers and public/_redirects,
-# so they ship inside the publish directory and apply to either deploy path.
+# which Vite copies into dist/ so they ship inside the publish directory.
 
 [build]
-  command = "npm run build"
+  command = "npm run check && npm run build"
   publish = "dist"
 
 [build.environment]

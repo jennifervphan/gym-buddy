@@ -27,26 +27,23 @@ Other scripts:
 
 ## Deploying
 
-The app is static files, so any host works. It is set up to deploy to **Netlify from GitHub
-Actions, gated on the tests** — `.github/workflows/ci.yml` runs typecheck, lint and the test suite,
-and only deploys if they all pass. A red build never reaches the live site.
+The app is static files, so any host works. It is set up for **Netlify's Git integration**: connect
+the repo once in the Netlify UI and every push to `main` builds and ships. No tokens or secrets are
+involved.
 
-### One-time setup
+**The tests gate the deploy.** The build command in `netlify.toml` is:
 
-1. **Create the Netlify site.** In Netlify, **Add new site → Import an existing project**, pick this
-   repo, and let the first deploy run.
-2. **Turn off Netlify's automatic builds**: Site configuration → Build & deploy → Continuous
-   deployment → **Stop builds**. This matters — if Netlify keeps building on push, it deploys in
-   parallel with the workflow and the test gate is bypassed.
-3. **Add two repository secrets** under Settings → Secrets and variables → Actions:
+```
+npm run check && npm run build
+```
 
-   | Secret | Where to get it |
-   |---|---|
-   | `NETLIFY_AUTH_TOKEN` | Netlify → User settings → Applications → **New access token** |
-   | `NETLIFY_SITE_ID` | Netlify → Site configuration → General → **Site ID** |
+`npm run check` is typecheck, lint and the full test suite. If any of them fails the command exits
+non-zero, Netlify fails the build, and the live site keeps serving the last good deploy — a red
+commit never ships.
 
-After that, every push to `main` runs the checks and deploys on success. Pull requests run the
-checks only. The deployed files are the exact artifact the tests ran against, not a rebuild.
+`.github/workflows/ci.yml` runs the same checks on pushes and pull requests. That is for reporting,
+so a PR shows a pass/fail without you going to look at Netlify; the thing that actually gates what
+ships is the build command above.
 
 ### Response headers
 
@@ -56,7 +53,11 @@ deployed folder and apply regardless of how the deploy happens. They set what ma
 assets under `/assets/` cached indefinitely, and a strict Content-Security-Policy locking the page
 to same-origin (the app makes no network requests at runtime, so nothing needs relaxing).
 
-`netlify.toml` holds only the build settings, used if Netlify-side builds are ever re-enabled.
+Worth confirming once after the first deploy:
+
+```
+curl -I https://your-site.netlify.app/sw.js   # expect Cache-Control: public, max-age=0, must-revalidate
+```
 
 ### Installing it on your phone
 
