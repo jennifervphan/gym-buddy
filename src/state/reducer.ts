@@ -27,6 +27,7 @@ export type Action =
   | { type: 'archive-exercise'; exerciseId: string; archived: boolean }
   | { type: 'save-routine'; routine: Routine }
   | { type: 'delete-routine'; routineId: string }
+  | { type: 'apply-program'; routines: Routine[]; unarchive: string[] }
   | { type: 'update-settings'; patch: Partial<Settings> }
   | { type: 'replace-data'; data: AppData }
   | { type: 'reset-data'; unit: Unit }
@@ -167,6 +168,17 @@ export function reducer(data: AppData, action: Action): AppData {
 
     case 'delete-routine':
       return { ...data, routines: data.routines.filter((r) => r.id !== action.routineId) }
+
+    case 'apply-program':
+      // Swaps the routines only. Logged sessions and the exercise library are
+      // kept, so switching split never costs you history.
+      return {
+        ...data,
+        routines: action.routines,
+        exercises: data.exercises.map((e) =>
+          action.unarchive.includes(e.id) ? { ...e, archived: false } : e,
+        ),
+      }
 
     case 'update-settings': {
       const { unit, ...rest } = action.patch

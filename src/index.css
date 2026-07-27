@@ -410,6 +410,47 @@ textarea {
   color: var(--critical);
 }
 
+/* ---------- Quick start ---------- */
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.quick-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 15px;
+  min-height: 66px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--series-1) 30%, transparent);
+  background: color-mix(in srgb, var(--series-1) 10%, var(--surface-1));
+  text-align: left;
+}
+
+.quick-btn:active {
+  opacity: 0.7;
+}
+
+.quick-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quick-btn .quick-label {
+  font-weight: 650;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+}
+
+.quick-btn .quick-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
 /* ---------- Stat tiles ---------- */
 
 /* Two columns on a phone, so a four-tile group reads as a tidy 2×2. */

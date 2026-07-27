@@ -217,3 +217,46 @@ describe('bulk data', () => {
     expect(data.settings.unit).toBe('lb')
   })
 })
+
+describe('applying a program', () => {
+  const routines = [
+    { id: 'p1', name: 'Push', exerciseIds: ['ex-2'], custom: false, archived: false },
+    { id: 'p2', name: 'Pull', exerciseIds: ['ex-5'], custom: false, archived: false },
+  ]
+
+  it('replaces the routines wholesale', () => {
+    const data = reducer(buildSeed('kg'), { type: 'apply-program', routines, unarchive: [] })
+    expect(data.routines).toEqual(routines)
+  })
+
+  it('keeps logged sessions', () => {
+    const withHistory: AppData = { ...buildSeed('kg'), sessions: [{ ...active, finishedAt: 'x' }] }
+    const data = reducer(withHistory, { type: 'apply-program', routines, unarchive: [] })
+    expect(data.sessions).toHaveLength(1)
+  })
+
+  it('restores archived exercises the program needs', () => {
+    const seeded = reducer(buildSeed('kg'), {
+      type: 'archive-exercise',
+      exerciseId: 'ex-2',
+      archived: true,
+    })
+    const data = reducer(seeded, { type: 'apply-program', routines, unarchive: ['ex-2'] })
+    expect(data.exercises.find((e) => e.id === 'ex-2')?.archived).toBe(false)
+  })
+
+  it('leaves other archived exercises alone', () => {
+    const seeded = reducer(buildSeed('kg'), {
+      type: 'archive-exercise',
+      exerciseId: 'ex-9',
+      archived: true,
+    })
+    const data = reducer(seeded, { type: 'apply-program', routines, unarchive: ['ex-2'] })
+    expect(data.exercises.find((e) => e.id === 'ex-9')?.archived).toBe(true)
+  })
+
+  it('does not disturb a session in progress', () => {
+    const data = reducer(withActive(), { type: 'apply-program', routines, unarchive: [] })
+    expect(data.activeSession?.id).toBe('live')
+  })
+})

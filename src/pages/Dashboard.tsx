@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { Routine } from '../types'
 import { useStore } from '../state/context'
 import { planSession, suggestNextRoutine } from '../lib/progression'
+import { nextRoutineForFocus } from '../lib/programs'
 import { buildSession } from '../lib/session'
 import {
   sessionsThisWeek,
@@ -27,6 +28,14 @@ export function Dashboard({ navigate }: { navigate: (route: Route) => void }) {
   const [picking, setPicking] = useState(false)
 
   const suggested = useMemo(() => suggestNextRoutine(routines, sessions), [routines, sessions])
+  const upperNext = useMemo(
+    () => nextRoutineForFocus(routines, exercises, sessions, 'upper'),
+    [routines, exercises, sessions],
+  )
+  const lowerNext = useMemo(
+    () => nextRoutineForFocus(routines, exercises, sessions, 'lower'),
+    [routines, exercises, sessions],
+  )
   const plan = useMemo(
     () => (suggested ? planSession(suggested, exercises, sessions, settings) : null),
     [suggested, exercises, sessions, settings],
@@ -97,6 +106,27 @@ export function Dashboard({ navigate }: { navigate: (route: Route) => void }) {
               Pick another
             </button>
           </div>
+        </div>
+      )}
+
+      {/* One tap straight into an upper or lower session, skipping the rotation. */}
+      {!activeSession && (upperNext || lowerNext) && (
+        <div className="quick-grid">
+          {([
+            ['Upper body', upperNext],
+            ['Lower body', lowerNext],
+          ] as const).map(([label, routine]) => (
+            <button
+              key={label}
+              type="button"
+              className="quick-btn"
+              disabled={!routine}
+              onClick={() => routine && start(routine)}
+            >
+              <span className="quick-label">{label}</span>
+              <span className="quick-sub">{routine ? routine.name : 'No routine yet'}</span>
+            </button>
+          ))}
         </div>
       )}
 

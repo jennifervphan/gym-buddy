@@ -8,6 +8,8 @@ import {
   MUSCLE_GROUP_LABELS,
   formatWeight,
 } from '../lib/format'
+import { PROGRAMS, buildProgramRoutines } from '../lib/programs'
+import type { Program } from '../lib/programs'
 import { Sheet } from '../components/Sheet'
 import { IconChevronRight, IconPlus, IconTrash } from '../components/Icons'
 import type { Route } from '../lib/useRoute'
@@ -20,6 +22,7 @@ export function Library({ navigate }: { navigate: (route: Route) => void }) {
   const [editing, setEditing] = useState<Exercise | null>(null)
   const [group, setGroup] = useState<MuscleGroup | 'all'>('all')
   const [showArchived, setShowArchived] = useState(false)
+  const [browsing, setBrowsing] = useState(false)
 
   const exercises = useMemo(
     () =>
@@ -96,9 +99,14 @@ export function Library({ navigate }: { navigate: (route: Route) => void }) {
               )}
             </div>
           </div>
-          <button type="button" className="btn block" onClick={newRoutine}>
-            <IconPlus /> New routine
-          </button>
+          <div className="btn-row">
+            <button type="button" className="btn" onClick={newRoutine}>
+              <IconPlus /> New routine
+            </button>
+            <button type="button" className="btn" onClick={() => setBrowsing(true)}>
+              Browse programs
+            </button>
+          </div>
           <p className="muted-xs">
             Sessions rotate through your routines in order — finish one and the home screen suggests the
             next.
@@ -175,7 +183,58 @@ export function Library({ navigate }: { navigate: (route: Route) => void }) {
       )}
 
       {editing && <ExerciseEditor exercise={editing} onClose={() => setEditing(null)} />}
+      {browsing && <ProgramPicker onClose={() => setBrowsing(false)} />}
     </div>
+  )
+}
+
+function ProgramPicker({ onClose }: { onClose: () => void }) {
+  const { data, dispatch } = useStore()
+
+  const apply = (program: Program) => {
+    const { routines, unarchive } = buildProgramRoutines(program, data.exercises, () =>
+      crypto.randomUUID(),
+    )
+    const confirmed = window.confirm(
+      `Replace your ${data.routines.length} routines with the ${program.days.length} days of "${program.name}"?\n\n` +
+        'Your logged sessions and exercise library are kept, so nothing you have tracked is lost.',
+    )
+    if (!confirmed) return
+    dispatch({ type: 'apply-program', routines, unarchive })
+    onClose()
+  }
+
+  return (
+    <Sheet title="Choose a program" onClose={onClose}>
+      <p className="muted">
+        Each one replaces your routines with a ready-made split. Your logged sessions and exercise
+        library stay exactly as they are.
+      </p>
+      {PROGRAMS.map((program) => (
+        <div className="card" key={program.id}>
+          <div className="card-head" style={{ marginBottom: 8 }}>
+            <div>
+              <h2>{program.name}</h2>
+              <p className="muted-xs">{program.daysPerWeek} days a week</p>
+            </div>
+          </div>
+          <p className="muted" style={{ marginBottom: 10 }}>
+            {program.summary}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+            {program.days.map((day) => (
+              <div key={day.name}>
+                <div style={{ fontWeight: 600, fontSize: '0.86rem' }}>{day.name}</div>
+                <div className="muted-xs">{day.exercises.join(' · ')}</div>
+              </div>
+            ))}
+          </div>
+          <button type="button" className="btn primary block" onClick={() => apply(program)}>
+            Use this program
+          </button>
+        </div>
+      ))}
+    </Sheet>
   )
 }
 

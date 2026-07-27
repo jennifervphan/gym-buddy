@@ -97,17 +97,40 @@ The stall limit, deload size, weekly session target and units are all configurab
 ## What's in the app
 
 - **Home** — the next routine in your rotation, its full prescription with reasons, weekly
-  consistency, and a nudge about exercises you haven't trained lately.
+  consistency, and a nudge about exercises you haven't trained lately. Two **quick-start** buttons —
+  Upper body and Lower body — begin a session in one tap, skipping the rotation.
 - **Workout** — the session logger. Set rows are pre-filled with the planned weight, so logging is
   just typing rep counts. Rest timer starts automatically, warmup ramps are suggested for heavy
   work, and a trophy marks a set that beats your best estimated 1RM.
 - **Progress** — weekly volume, working sets by muscle group, and per-exercise charts for estimated
   1RM, top-set weight and volume. Every chart is backed by a table of the same numbers.
 - **History** — every session, with the exact sets you logged and the plan you were given.
-- **Library** — the exercise library (30 seeded exercises, fully editable, plus your own) and your
+- **Library** — the exercise library (29 seeded exercises, fully editable, plus your own) and your
   routines. Sessions rotate through routines in order.
 
-Seeded routines are a four-day Upper/Lower split; delete or rewrite them freely.
+### Programs
+
+**Library → Routines → Browse programs** offers four ready-made splits:
+
+| Program | Days | Suits |
+|---|---|---|
+| Upper / Lower | 4 | The default. Alternates A and B sessions. |
+| Upper / Lower — simple | 2 | Least to keep track of. |
+| Push / Pull / Legs | 3 | Split by movement rather than body half. |
+| Full body | 3 | Each day hits everything, so a missed session costs less. |
+
+Picking one replaces your routines. **Your logged sessions and exercise library are kept**, so
+switching split never loses history or resets your progression — each exercise picks up from
+whatever you last lifted on it.
+
+### Quick start
+
+The Upper body / Lower body buttons on Home skip the rotation. Which routine each one launches is
+worked out from the muscle groups its exercises train (`routineFocus` in `src/lib/programs.ts`) —
+nothing to tag, and custom routines are classified automatically. Core work counts towards neither,
+and a routine with real work on both halves is treated as full body, so it won't appear under
+either button. Where a focus has two matching routines, quick start picks whichever has gone
+longest untrained, which alternates Upper A and Upper B by itself.
 
 ## Notes on the numbers
 
