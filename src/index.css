@@ -795,8 +795,15 @@ textarea {
 .sheet {
   width: 100%;
   max-width: 560px;
+  /* vh first as a fallback: a browser without dvh support would drop the
+   * max-height entirely, letting the sheet grow past the viewport with nothing
+   * to scroll. */
+  max-height: 88vh;
   max-height: 88dvh;
   overflow-y: auto;
+  /* Keeps a swipe that reaches the end of the list from scrolling the page
+   * behind the sheet. */
+  overscroll-behavior: contain;
   background: var(--plane);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: 8px 16px calc(20px + var(--safe-bottom));
