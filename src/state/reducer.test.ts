@@ -87,8 +87,8 @@ describe('sets within a session', () => {
 
   it('patches an existing set', () => {
     let data = reducer(withActive(), { type: 'add-set', exerciseId: 'ex-2', set: set('s1', 60, 8) })
-    data = reducer(data, { type: 'update-set', exerciseId: 'ex-2', setId: 's1', patch: { reps: 6, rpe: 9 } })
-    expect(data.activeSession?.exercises[0]?.sets[0]).toMatchObject({ weight: 60, reps: 6, rpe: 9 })
+    data = reducer(data, { type: 'update-set', exerciseId: 'ex-2', setId: 's1', patch: { reps: 6 } })
+    expect(data.activeSession?.exercises[0]?.sets[0]).toMatchObject({ weight: 60, reps: 6 })
   })
 
   it('deletes a set', () => {
@@ -258,5 +258,23 @@ describe('applying a program', () => {
   it('does not disturb a session in progress', () => {
     const data = reducer(withActive(), { type: 'apply-program', routines, unarchive: [] })
     expect(data.activeSession?.id).toBe('live')
+  })
+})
+
+describe('recording a backup', () => {
+  it('stores the time and the finished session count', () => {
+    const seeded: AppData = {
+      ...buildSeed('kg'),
+      sessions: [{ ...active, finishedAt: 'x' }, { ...active, id: 'live-2' }],
+    }
+    const data = reducer(seeded, { type: 'record-backup', at: '2026-03-12T12:00:00.000Z' })
+    // Only the finished one counts towards what has been saved.
+    expect(data.lastBackup).toEqual({ at: '2026-03-12T12:00:00.000Z', sessionCount: 1 })
+  })
+
+  it('overwrites an earlier backup record', () => {
+    const seeded: AppData = { ...buildSeed('kg'), lastBackup: { at: 'old', sessionCount: 99 } }
+    const data = reducer(seeded, { type: 'record-backup', at: '2026-03-12T12:00:00.000Z' })
+    expect(data.lastBackup?.sessionCount).toBe(0)
   })
 })

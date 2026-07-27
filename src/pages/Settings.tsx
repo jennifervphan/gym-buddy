@@ -2,12 +2,16 @@ import { useRef, useState } from 'react'
 import type { Unit } from '../types'
 import { useStore } from '../state/context'
 import { exportJSON, importJSON } from '../lib/storage'
+import { finishedSessionCount, sessionsSinceBackup } from '../lib/backup'
+import { formatRelativeDate } from '../lib/format'
 
 export function Settings() {
   const { data, dispatch } = useStore()
   const { settings } = data
   const fileInput = useRef<HTMLInputElement>(null)
   const [message, setMessage] = useState<{ tone: 'ok' | 'error'; text: string } | null>(null)
+  const finished = finishedSessionCount(data)
+  const unsaved = sessionsSinceBackup(data)
 
   const download = () => {
     const blob = new Blob([exportJSON(data)], { type: 'application/json' })
@@ -17,6 +21,7 @@ export function Settings() {
     link.download = `gym-buddy-${new Date().toISOString().slice(0, 10)}.json`
     link.click()
     URL.revokeObjectURL(url)
+    dispatch({ type: 'record-backup', at: new Date().toISOString() })
     setMessage({ tone: 'ok', text: 'Backup downloaded.' })
   }
 
@@ -157,9 +162,21 @@ export function Settings() {
 
       <div className="card">
         <div className="section-title">Your data</div>
-        <p className="muted" style={{ margin: '8px 0 12px' }}>
-          Everything lives on this device only — nothing is uploaded anywhere. Export a backup before
-          clearing your browser data or switching phones.
+        <p className="muted" style={{ margin: '8px 0 10px' }}>
+          Everything lives in this browser's storage only — nothing is uploaded anywhere. Clearing
+          your browsing data deletes it, and a browser can evict the storage of a site you haven't
+          opened in a while. Installing the app to your home screen protects against that; an
+          exported backup protects against everything.
+        </p>
+        <p className="muted-xs" style={{ marginBottom: 12 }}>
+          {data.lastBackup
+            ? `Last backup ${formatRelativeDate(data.lastBackup.at).toLowerCase()}` +
+              (unsaved > 0
+                ? ` · ${unsaved} ${unsaved === 1 ? 'session' : 'sessions'} logged since`
+                : ' · nothing new since')
+            : finished === 0
+              ? 'Nothing logged yet.'
+              : `Never backed up · ${finished} ${finished === 1 ? 'session' : 'sessions'} at risk`}
         </p>
         <div className="btn-row">
           <button type="button" className="btn" onClick={download}>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { Exercise, LoggedSet, Session } from '../types'
 import {
   bestSet,
+  bodyweightSeries,
   estimate1RM,
   recordsFor,
   seriesFor,
@@ -277,5 +278,34 @@ describe('bestSet for bodyweight work', () => {
     const records = recordsFor(sessions, 'pullup')
     expect(records?.bestSetReps).toBe(12)
     expect(records?.best1RM).toBe(0)
+  })
+})
+
+describe('bodyweightSeries', () => {
+  function weighed(isoDate: string, bodyweight?: number, finished = true): Session {
+    return {
+      id: `bw-${isoDate}`,
+      startedAt: `${isoDate}T10:00:00.000Z`,
+      ...(finished ? { finishedAt: `${isoDate}T11:00:00.000Z` } : {}),
+      ...(bodyweight === undefined ? {} : { bodyweight }),
+      exercises: [],
+    }
+  }
+
+  it('returns recorded weights oldest first', () => {
+    const series = bodyweightSeries([weighed('2026-03-09', 71), weighed('2026-03-02', 70.5)])
+    expect(series.map((p) => p.weight)).toEqual([70.5, 71])
+  })
+
+  it('skips sessions where bodyweight was left blank', () => {
+    expect(bodyweightSeries([weighed('2026-03-02'), weighed('2026-03-09', 70)])).toHaveLength(1)
+  })
+
+  it('treats a zero as unrecorded rather than a real weight', () => {
+    expect(bodyweightSeries([weighed('2026-03-02', 0)])).toEqual([])
+  })
+
+  it('ignores unfinished sessions', () => {
+    expect(bodyweightSeries([weighed('2026-03-02', 70, false)])).toEqual([])
   })
 })

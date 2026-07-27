@@ -133,6 +133,19 @@ export function seriesFor(sessions: Session[], exerciseId: string): ExercisePoin
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
+export type BodyweightPoint = { date: string; weight: number }
+
+/**
+ * Bodyweight recorded against sessions, oldest first. Only sessions where it
+ * was actually entered count — a blank field is not a zero.
+ */
+export function bodyweightSeries(sessions: Session[]): BodyweightPoint[] {
+  return sessions
+    .filter((s) => s.finishedAt && typeof s.bodyweight === 'number' && s.bodyweight > 0)
+    .map((s) => ({ date: s.startedAt, weight: s.bodyweight as number }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+}
+
 /** Monday-anchored ISO date (YYYY-MM-DD) for the week containing `date`. */
 export function weekStart(date: Date): string {
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))

@@ -4,6 +4,8 @@ import { useStore } from '../state/context'
 import { planSession, suggestNextRoutine } from '../lib/progression'
 import { nextRoutineForFocus } from '../lib/programs'
 import { buildSession } from '../lib/session'
+import { sessionsSinceBackup, shouldPromptBackup } from '../lib/backup'
+import { useInstallPrompt } from '../lib/useInstallPrompt'
 import {
   sessionsThisWeek,
   stalePrescriptions,
@@ -19,7 +21,7 @@ import {
 } from '../lib/format'
 import { BarChart } from '../components/charts'
 import { Sheet } from '../components/Sheet'
-import { IconArrowUp, IconClock, IconFlame, IconPlus } from '../components/Icons'
+import { IconArrowUp, IconClock, IconFlame, IconPlus, IconX } from '../components/Icons'
 import type { Route } from '../lib/useRoute'
 
 export function Dashboard({ navigate }: { navigate: (route: Route) => void }) {
@@ -49,6 +51,9 @@ export function Dashboard({ navigate }: { navigate: (route: Route) => void }) {
     [sessions],
   )
   const stale = useMemo(() => stalePrescriptions(sessions, exercises).slice(0, 3), [sessions, exercises])
+  const install = useInstallPrompt()
+  const needsBackup = shouldPromptBackup(data)
+  const unsaved = sessionsSinceBackup(data)
   const upcoming = plan?.exercises.filter((e) => e.kind === 'add-weight').length ?? 0
 
   const start = (routine: Routine | null) => {
@@ -220,6 +225,52 @@ export function Dashboard({ navigate }: { navigate: (route: Route) => void }) {
             caption={`Sessions completed in each of the last ${weeks.length} weeks`}
             target={settings.weeklyTarget}
           />
+        </div>
+      )}
+
+      {install.canSuggest && sessions.length > 0 && (
+        <div className="card notice">
+          <div className="card-head" style={{ marginBottom: 6 }}>
+            <h2>Keep your history safe</h2>
+            <button
+              type="button"
+              className="btn icon ghost"
+              onClick={install.dismiss}
+              aria-label="Dismiss install suggestion"
+            >
+              <IconX />
+            </button>
+          </div>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            {install.manual
+              ? 'Your training is stored in this browser, which can clear it if you go a while without visiting. Add Gym Buddy to your home screen and it stays put — tap Share, then "Add to Home Screen".'
+              : 'Your training is stored in this browser, which can clear it if you go a while without visiting. Installing the app keeps it put, and makes it open full screen.'}
+          </p>
+          {install.canPrompt && (
+            <button type="button" className="btn primary block" onClick={install.install}>
+              Install Gym Buddy
+            </button>
+          )}
+        </div>
+      )}
+
+      {needsBackup && (
+        <div className="card notice">
+          <div className="card-head" style={{ marginBottom: 6 }}>
+            <h2>Back up your training</h2>
+          </div>
+          <p className="muted" style={{ marginBottom: 12 }}>
+            {data.lastBackup
+              ? `${unsaved} ${unsaved === 1 ? 'session' : 'sessions'} logged since your last backup. An export is the only copy that survives clearing this browser.`
+              : `You have ${unsaved} ${unsaved === 1 ? 'session' : 'sessions'} logged and no backup yet. An export is the only copy that survives clearing this browser.`}
+          </p>
+          <button
+            type="button"
+            className="btn block"
+            onClick={() => navigate({ name: 'settings' })}
+          >
+            Export a backup
+          </button>
         </div>
       )}
 

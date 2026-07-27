@@ -250,6 +250,12 @@ textarea {
   overflow: hidden;
 }
 
+/* An advisory card — visually distinct from data, without alarming. */
+.card.notice {
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  background: color-mix(in srgb, var(--warning) 7%, var(--surface-1));
+}
+
 .card-head {
   display: flex;
   align-items: flex-start;

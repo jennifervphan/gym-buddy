@@ -9,6 +9,20 @@ export { SCHEMA_VERSION, STORAGE_KEY } from './schema'
  * Brings a stored payload up to the current schema. Only version 1 exists so
  * far; later versions add their steps here in order.
  */
+/**
+ * v1 → v2 dropped the unused `rpe` field from logged sets. Stripping it keeps
+ * exports clean rather than carrying a key nothing reads.
+ */
+function stripLegacySetFields(session: Session): Session {
+  return {
+    ...session,
+    exercises: session.exercises.map((entry) => ({
+      ...entry,
+      sets: entry.sets.map(({ id, kind, weight, reps }) => ({ id, kind, weight, reps })),
+    })),
+  }
+}
+
 export function migrate(raw: unknown): AppData | null {
   if (!raw || typeof raw !== 'object') return null
   const data = raw as Partial<AppData>
@@ -19,8 +33,9 @@ export function migrate(raw: unknown): AppData | null {
     settings: { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) },
     exercises: data.exercises,
     routines: Array.isArray(data.routines) ? data.routines : [],
-    sessions: data.sessions,
-    activeSession: data.activeSession ?? null,
+    sessions: data.sessions.map(stripLegacySetFields),
+    activeSession: data.activeSession ? stripLegacySetFields(data.activeSession) : null,
+    lastBackup: data.lastBackup ?? null,
   }
 }
 

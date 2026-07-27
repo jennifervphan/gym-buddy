@@ -115,6 +115,7 @@ export function buildSeed(unit: Unit): AppData {
     routines,
     sessions: [],
     activeSession: null,
+    lastBackup: null,
   }
 }
 

@@ -47,8 +47,6 @@ export type LoggedSet = {
   kind: SetKind
   weight: number
   reps: number
-  /** Rate of perceived exertion, 6–10. Optional. */
-  rpe?: number
 }
 
 export type LoggedExercise = {
@@ -120,6 +118,13 @@ export type Settings = {
   restTimerEnabled: boolean
 }
 
+/** When the user last exported a backup, used to nudge them before too much is at risk. */
+export type BackupRecord = {
+  at: string
+  /** Finished sessions at the time of the export. */
+  sessionCount: number
+}
+
 export type AppData = {
   schemaVersion: number
   settings: Settings
@@ -128,4 +133,5 @@ export type AppData = {
   sessions: Session[]
   /** The in-progress session, if any. Kept separate from history. */
   activeSession: Session | null
+  lastBackup: BackupRecord | null
 }

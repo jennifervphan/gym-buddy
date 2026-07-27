@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../state/context'
 import {
+  bodyweightSeries,
   recordsFor,
   seriesFor,
   sessionVolume,
@@ -34,6 +35,7 @@ export function Progress({ navigate }: { navigate: (route: Route) => void }) {
     [sessions, exercises, window_],
   )
   const maxSets = Math.max(...split.map((s) => s.sets), 1)
+  const bodyweight = useMemo(() => bodyweightSeries(sessions), [sessions])
 
   /** Exercises with history, ranked by how recently they were trained. */
   const tracked = useMemo(
@@ -130,6 +132,27 @@ export function Progress({ navigate }: { navigate: (route: Route) => void }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {bodyweight.length > 1 && (
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <h2>Bodyweight</h2>
+              <p className="muted-xs">
+                From the {bodyweight.length} sessions where you recorded it, in {settings.unit}.
+              </p>
+            </div>
+          </div>
+          <LineChart
+            points={bodyweight.map((p) => ({
+              label: formatShortDate(p.date),
+              value: p.weight,
+            }))}
+            formatValue={(v) => formatNumber(v, 1)}
+            caption={`Bodyweight across ${bodyweight.length} sessions, in ${settings.unit}`}
+          />
         </div>
       )}
 

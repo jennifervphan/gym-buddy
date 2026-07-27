@@ -28,6 +28,7 @@ export type Action =
   | { type: 'save-routine'; routine: Routine }
   | { type: 'delete-routine'; routineId: string }
   | { type: 'apply-program'; routines: Routine[]; unarchive: string[] }
+  | { type: 'record-backup'; at: string }
   | { type: 'update-settings'; patch: Partial<Settings> }
   | { type: 'replace-data'; data: AppData }
   | { type: 'reset-data'; unit: Unit }
@@ -185,6 +186,12 @@ export function reducer(data: AppData, action: Action): AppData {
       const withRest = { ...data, settings: { ...data.settings, ...rest } }
       return unit ? convertUnits(withRest, unit) : withRest
     }
+
+    case 'record-backup':
+      return {
+        ...data,
+        lastBackup: { at: action.at, sessionCount: data.sessions.filter((s) => s.finishedAt).length },
+      }
 
     case 'replace-data':
       return action.data

@@ -153,3 +153,48 @@ describe('export and import', () => {
     expect(result.ok).toBe(false)
   })
 })
+
+describe('migrating from schema v1', () => {
+  const v1 = {
+    schemaVersion: 1,
+    settings: { unit: 'kg' },
+    exercises: [],
+    sessions: [
+      {
+        id: 'old',
+        startedAt: '2026-01-05T10:00:00.000Z',
+        finishedAt: '2026-01-05T11:00:00.000Z',
+        exercises: [
+          { exerciseId: 'ex-2', planned: null, sets: [{ id: 's1', kind: 'working', weight: 60, reps: 8, rpe: 9 }] },
+        ],
+      },
+    ],
+  }
+
+  it('drops the retired rpe field from logged sets', () => {
+    const migrated = migrate(v1)
+    const set = migrated?.sessions[0]?.exercises[0]?.sets[0]
+    expect(set).toEqual({ id: 's1', kind: 'working', weight: 60, reps: 8 })
+    expect(set).not.toHaveProperty('rpe')
+  })
+
+  it('keeps everything else about the set intact', () => {
+    const migrated = migrate(v1)
+    expect(migrated?.sessions[0]?.id).toBe('old')
+    expect(migrated?.schemaVersion).toBe(SCHEMA_VERSION)
+  })
+
+  it('cleans an in-progress session too', () => {
+    const migrated = migrate({ ...v1, activeSession: { ...v1.sessions[0], id: 'live' } })
+    expect(migrated?.activeSession?.exercises[0]?.sets[0]).not.toHaveProperty('rpe')
+  })
+
+  it('defaults the backup record for data that predates it', () => {
+    expect(migrate(v1)?.lastBackup).toBeNull()
+  })
+
+  it('preserves an existing backup record', () => {
+    const record = { at: '2026-03-01T00:00:00.000Z', sessionCount: 4 }
+    expect(migrate({ ...v1, lastBackup: record })?.lastBackup).toEqual(record)
+  })
+})

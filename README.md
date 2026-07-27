@@ -102,8 +102,9 @@ The stall limit, deload size, weekly session target and units are all configurab
 - **Workout** — the session logger. Set rows are pre-filled with the planned weight, so logging is
   just typing rep counts. Rest timer starts automatically, warmup ramps are suggested for heavy
   work, and a trophy marks a set that beats your best estimated 1RM.
-- **Progress** — weekly volume, working sets by muscle group, and per-exercise charts for estimated
-  1RM, top-set weight and volume. Every chart is backed by a table of the same numbers.
+- **Progress** — weekly volume, working sets by muscle group, bodyweight over time, and per-exercise
+  charts for estimated 1RM, top-set weight and volume. Every chart is backed by a table of the same
+  numbers.
 - **History** — every session, with the exact sets you logged and the plan you were given.
 - **Library** — the exercise library (29 seeded exercises, fully editable, plus your own) and your
   routines. Sessions rotate through routines in order.
@@ -162,5 +163,25 @@ The interesting logic is deliberately kept out of the components:
 ## Data and privacy
 
 Nothing leaves your device. There is no analytics, no network request at runtime, and no account.
-The trade-off is that clearing your browser data deletes your training history — export a backup
-periodically.
+
+The trade-off is that your history is only as durable as this browser's storage. Clearing browsing
+data deletes it, and browsers can evict the storage of a site you haven't opened in a while —
+Safari is the strictest here, which is why installing to the home screen matters. The app defends
+against this in two ways:
+
+- **Install suggestion.** Once you have sessions logged, Home offers to install the app (or, on
+  iOS where browsers can't trigger it, explains the Share → Add to Home Screen steps). Dismissable,
+  and remembered.
+- **Backup nudge.** Home prompts for an export once there is history worth protecting — after the
+  first few sessions if you've never backed up, then again after 8 new sessions or 30 days.
+  Settings always shows when you last backed up and how many sessions have been logged since.
+
+The rules live in `src/lib/backup.ts` if you want them noisier or quieter.
+
+## Schema versions
+
+Stored data carries a `schemaVersion`; `migrate` in `src/lib/storage.ts` brings older payloads up to
+date on load, so an old export always imports cleanly.
+
+- **v2** — removed `rpe` from logged sets (it was never collected) and added the `lastBackup`
+  record. Migration strips the stale field and defaults the new one.
