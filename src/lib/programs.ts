@@ -100,7 +100,7 @@ export const PROGRAMS: Program[] = [
 export type Focus = 'upper' | 'lower' | 'full'
 
 const UPPER_GROUPS: MuscleGroup[] = ['chest', 'back', 'shoulders', 'biceps', 'triceps']
-const LOWER_GROUPS: MuscleGroup[] = ['quads', 'hamstrings', 'glutes', 'calves']
+const LOWER_GROUPS: MuscleGroup[] = ['quads', 'hamstrings', 'glutes', 'adductors', 'calves']
 
 /**
  * Classifies a routine by the muscle groups it trains, so quick-start can offer

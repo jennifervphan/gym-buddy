@@ -76,6 +76,7 @@ export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   quads: 'Quads',
   hamstrings: 'Hamstrings',
   glutes: 'Glutes',
+  adductors: 'Adductors',
   biceps: 'Biceps',
   triceps: 'Triceps',
   calves: 'Calves',

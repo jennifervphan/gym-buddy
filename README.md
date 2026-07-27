@@ -107,8 +107,8 @@ The stall limit, deload size, weekly session target and units are all configurab
   charts for estimated 1RM, top-set weight and volume. Every chart is backed by a table of the same
   numbers.
 - **History** — every session, with the exact sets you logged and the plan you were given.
-- **Library** — the exercise library (29 seeded exercises, fully editable, plus your own) and your
-  routines. Sessions rotate through routines in order.
+- **Library** — the exercise library (31 built-in exercises, fully editable, plus your own) and
+  your routines. Sessions rotate through routines in order.
 
 ### Programs
 
@@ -186,3 +186,8 @@ date on load, so an old export always imports cleanly.
 
 - **v2** — removed `rpe` from logged sets (it was never collected) and added the `lastBackup`
   record. Migration strips the stale field and defaults the new one.
+
+Separately from versioning, every load merges in any **built-in exercises your library is missing**,
+matched by name. The seed only runs on a first install, so without this an existing user would never
+receive exercises added to the library in a later release. Anything you already have — renamed,
+edited or archived — is left untouched, and nothing is added twice.

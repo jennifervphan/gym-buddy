@@ -40,6 +40,8 @@ const SEED_EXERCISES: SeedExercise[] = [
   { name: 'Cable Face Pull', muscleGroup: 'shoulders', equipment: 'cable', sets: 3, repMin: 12, repMax: 15, increment: 2.5, restSeconds: 75 },
   { name: 'Chest Fly', muscleGroup: 'chest', equipment: 'machine', sets: 3, repMin: 10, repMax: 15, increment: 2.5, restSeconds: 90 },
   { name: 'Calf Raise', muscleGroup: 'calves', equipment: 'machine', sets: 4, repMin: 10, repMax: 15, increment: 2.5, restSeconds: 75 },
+  { name: 'Hip Abduction', muscleGroup: 'glutes', equipment: 'machine', sets: 3, repMin: 12, repMax: 20, increment: 5, restSeconds: 75, notes: 'Seated machine — press the legs outwards, against the pads.' },
+  { name: 'Hip Adduction', muscleGroup: 'adductors', equipment: 'machine', sets: 3, repMin: 12, repMax: 20, increment: 5, restSeconds: 75, notes: 'Seated machine — squeeze the legs together, inner thigh.' },
 
   // Bodyweight (loadable — log added weight, or 0 for bodyweight only)
   { name: 'Pull-up', muscleGroup: 'back', equipment: 'bodyweight', sets: 3, repMin: 5, repMax: 10, increment: 2.5, restSeconds: 150 },
@@ -87,15 +89,45 @@ function toPoundIncrement(kg: number): number {
   return 10
 }
 
-export function buildSeed(unit: Unit): AppData {
-  const exercises: Exercise[] = SEED_EXERCISES.map((seed, i) => ({
+/** The built-in library, denominated in the given unit. */
+export function buildExercises(unit: Unit): Exercise[] {
+  return SEED_EXERCISES.map((seed, i) => ({
     ...seed,
     id: `ex-${i + 1}`,
     increment: unit === 'lb' ? toPoundIncrement(seed.increment) : seed.increment,
     custom: false,
     archived: false,
   }))
+}
 
+/**
+ * Adds built-in exercises the user's library is missing, matched by name.
+ *
+ * The seed only runs on a first install, so without this an existing user
+ * would never see exercises added to the library in a later release. Matching
+ * by name means anything they already have — renamed, edited or archived — is
+ * left alone, and nothing is ever added twice.
+ */
+export function mergeBuiltInExercises(existing: Exercise[], unit: Unit): Exercise[] {
+  const names = new Set(existing.map((e) => e.name.trim().toLowerCase()))
+  const usedIds = new Set(existing.map((e) => e.id))
+
+  const nextId = () => {
+    let n = existing.length + 1
+    while (usedIds.has(`ex-${n}`)) n += 1
+    usedIds.add(`ex-${n}`)
+    return `ex-${n}`
+  }
+
+  const additions = buildExercises(unit)
+    .filter((e) => !names.has(e.name.toLowerCase()))
+    .map((e) => ({ ...e, id: usedIds.has(e.id) ? nextId() : e.id }))
+
+  return additions.length === 0 ? existing : [...existing, ...additions]
+}
+
+export function buildSeed(unit: Unit): AppData {
+  const exercises = buildExercises(unit)
   const byName = new Map(exercises.map((e) => [e.name, e.id]))
   const routines: Routine[] = SEED_ROUTINES.map((seed, i) => ({
     id: `rt-${i + 1}`,

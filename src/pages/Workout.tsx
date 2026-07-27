@@ -292,6 +292,11 @@ function ExerciseCard({
             {MUSCLE_GROUP_LABELS[exercise.muscleGroup]} · {exercise.sets}×{exercise.repMin}–
             {exercise.repMax}
           </div>
+          {exercise.notes && (
+            <div className="muted-xs" style={{ marginTop: 4 }}>
+              {exercise.notes}
+            </div>
+          )}
         </div>
         <button
           type="button"

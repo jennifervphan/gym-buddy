@@ -1,6 +1,6 @@
 import type { AppData, Session, Unit } from '../types'
 import { SCHEMA_VERSION, STORAGE_KEY } from './schema'
-import { DEFAULT_SETTINGS, buildSeed, kgToLb, lbToKg } from './seed'
+import { DEFAULT_SETTINGS, buildSeed, kgToLb, lbToKg, mergeBuiltInExercises } from './seed'
 import { roundWeight } from './progression'
 
 export { SCHEMA_VERSION, STORAGE_KEY } from './schema'
@@ -28,10 +28,13 @@ export function migrate(raw: unknown): AppData | null {
   const data = raw as Partial<AppData>
   if (!Array.isArray(data.exercises) || !Array.isArray(data.sessions)) return null
 
+  const settings = { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) }
+
   return {
     schemaVersion: SCHEMA_VERSION,
-    settings: { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) },
-    exercises: data.exercises,
+    settings,
+    // Picks up built-in exercises added since this library was seeded.
+    exercises: mergeBuiltInExercises(data.exercises, settings.unit),
     routines: Array.isArray(data.routines) ? data.routines : [],
     sessions: data.sessions.map(stripLegacySetFields),
     activeSession: data.activeSession ? stripLegacySetFields(data.activeSession) : null,

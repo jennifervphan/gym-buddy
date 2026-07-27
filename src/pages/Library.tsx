@@ -369,6 +369,17 @@ function ExerciseEditor({ exercise, onClose }: { exercise: Exercise; onClose: ()
           />
         </div>
 
+        <div className="field">
+          <label htmlFor="ex-notes">Notes</label>
+          <input
+            id="ex-notes"
+            className="input"
+            placeholder="Setup, seat height, which machine…"
+            value={draft.notes ?? ''}
+            onChange={(e) => patch({ notes: e.target.value || undefined })}
+          />
+        </div>
+
         <p className="muted-xs">
           Gym Buddy holds the weight until every set reaches {draft.repMax} reps, then adds{' '}
           {formatWeight(draft.increment, data.settings.unit)} and rebuilds from {draft.repMin}.
