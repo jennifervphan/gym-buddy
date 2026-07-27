@@ -806,7 +806,9 @@ textarea {
   overscroll-behavior: contain;
   background: var(--plane);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  padding: 8px 16px calc(20px + var(--safe-bottom));
+  /* No top padding: the sticky header supplies it, so it can sit flush against
+   * the top of the scrollport with nothing scrolling through above it. */
+  padding: 0 16px calc(20px + var(--safe-bottom));
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -839,26 +841,33 @@ textarea {
   flex-shrink: 0;
 }
 
+/*
+ * Keeps the title and close button reachable through a long list. The negative
+ * side margins cancel the sheet's horizontal padding so the bar reaches both
+ * edges — otherwise rows scroll visibly through the gutters beside it.
+ */
+.sheet-top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 -16px;
+  padding: 8px 16px 10px;
+  background: var(--plane);
+}
+
 .sheet-handle {
   width: 38px;
   height: 4px;
   border-radius: 999px;
   background: var(--axis);
-  margin: 6px auto 2px;
+  margin: 0 auto 4px;
 }
 
-/* Keeps the title and close button reachable through a long list. */
 .sheet-head {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 6px 0 10px;
-  margin-top: -6px;
-  background: var(--plane);
 }
 
 /* ---------- Charts ---------- */

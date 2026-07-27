@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PlannedExercise, PlannedSession, Routine } from '../types'
-import { blankSets, buildSession } from './session'
+import { blankSets, buildSession, unperformedLaterSetIds } from './session'
 
 let counter = 0
 const makeId = () => `id-${++counter}`
@@ -72,5 +72,60 @@ describe('buildSession', () => {
     expect(session.exercises).toEqual([])
     expect(session.routineId).toBeUndefined()
     expect(session.routineName).toBeUndefined()
+  })
+})
+
+describe('unperformedLaterSetIds', () => {
+  const sets = (spec: [string, number, number, 'working' | 'warmup'][]) =>
+    spec.map(([id, weight, reps, kind]) => ({ id, weight, reps, kind }))
+
+  it('lists later working sets that have no reps yet', () => {
+    const s = sets([
+      ['a', 20, 10, 'working'],
+      ['b', 0, 0, 'working'],
+      ['c', 0, 0, 'working'],
+    ])
+    expect(unperformedLaterSetIds(s, 'a')).toEqual(['b', 'c'])
+  })
+
+  it('leaves sets that have already been performed alone', () => {
+    const s = sets([
+      ['a', 20, 10, 'working'],
+      ['b', 25, 8, 'working'],
+      ['c', 0, 0, 'working'],
+    ])
+    expect(unperformedLaterSetIds(s, 'a')).toEqual(['c'])
+  })
+
+  it('never reaches backwards', () => {
+    const s = sets([
+      ['a', 0, 0, 'working'],
+      ['b', 20, 10, 'working'],
+      ['c', 0, 0, 'working'],
+    ])
+    expect(unperformedLaterSetIds(s, 'b')).toEqual(['c'])
+  })
+
+  it('skips warmups, which carry their own weights', () => {
+    const s = sets([
+      ['a', 20, 10, 'working'],
+      ['w', 0, 0, 'warmup'],
+      ['b', 0, 0, 'working'],
+    ])
+    expect(unperformedLaterSetIds(s, 'a')).toEqual(['b'])
+  })
+
+  it('does nothing when the weight came from a warmup', () => {
+    const s = sets([
+      ['w', 20, 10, 'warmup'],
+      ['a', 0, 0, 'working'],
+    ])
+    expect(unperformedLaterSetIds(s, 'w')).toEqual([])
+  })
+
+  it('is empty for the last set, or an unknown one', () => {
+    const s = sets([['a', 20, 10, 'working']])
+    expect(unperformedLaterSetIds(s, 'a')).toEqual([])
+    expect(unperformedLaterSetIds(s, 'nope')).toEqual([])
   })
 })

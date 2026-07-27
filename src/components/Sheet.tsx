@@ -39,12 +39,16 @@ export function Sheet({
       }}
     >
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title}>
-        <div className="sheet-handle" />
-        <div className="sheet-head">
-          <h2>{title}</h2>
-          <button type="button" className="btn icon ghost" onClick={onClose} aria-label="Close">
-            <IconX />
-          </button>
+        {/* Handle and title share one sticky block so the list scrolls behind a
+            single opaque bar, with no gap at the edges for it to show through. */}
+        <div className="sheet-top">
+          <div className="sheet-handle" />
+          <div className="sheet-head">
+            <h2>{title}</h2>
+            <button type="button" className="btn icon ghost" onClick={onClose} aria-label="Close">
+              <IconX />
+            </button>
+          </div>
         </div>
         {children}
         {footer}

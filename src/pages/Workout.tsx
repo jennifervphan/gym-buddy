@@ -3,8 +3,9 @@ import type { Exercise, LoggedExercise, LoggedSet, PlannedExercise } from '../ty
 import { useStore } from '../state/context'
 import { PROGRESSION_LABELS, formatBest, formatWeight, MUSCLE_GROUP_LABELS } from '../lib/format'
 import { planExercise, warmupSets } from '../lib/progression'
-import { blankSets } from '../lib/session'
+import { blankSets, unperformedLaterSetIds } from '../lib/session'
 import { estimate1RM, recordsFor } from '../lib/stats'
+import { NumberInput } from '../components/NumberInput'
 import { RestTimer } from '../components/RestTimer'
 import { Sheet } from '../components/Sheet'
 import {
@@ -365,6 +366,13 @@ function ExerciseCard({
               set={set}
               index={index}
               exerciseId={exercise.id}
+              onWeight={(weight) => {
+                dispatch({ type: 'update-set', exerciseId: exercise.id, setId: set.id, patch: { weight } })
+                // Sets you haven't done yet follow the weight you just entered.
+                for (const id of unperformedLaterSetIds(entry.sets, set.id)) {
+                  dispatch({ type: 'update-set', exerciseId: exercise.id, setId: id, patch: { weight } })
+                }
+              }}
               workingIndex={
                 set.kind === 'working' ? working.findIndex((s) => s.id === set.id) + 1 : null
               }
@@ -419,6 +427,7 @@ function SetRow({
   workingIndex,
   isRecord,
   onLogged,
+  onWeight,
 }: {
   set: LoggedSet
   index: number
@@ -426,38 +435,34 @@ function SetRow({
   workingIndex: number | null
   isRecord: boolean
   onLogged: () => void
+  onWeight: (weight: number) => void
 }) {
   const { dispatch } = useStore()
-
-  const patch = (values: Partial<LoggedSet>) =>
-    dispatch({ type: 'update-set', exerciseId, setId: set.id, patch: values })
 
   return (
     <div className={set.kind === 'warmup' ? 'set-row warmup' : 'set-row'}>
       <span className="set-index">{workingIndex ?? 'W'}</span>
-      <input
+      <NumberInput
         className={set.reps > 0 ? 'num-input filled' : 'num-input'}
-        type="number"
-        inputMode="decimal"
-        step="0.5"
-        min="0"
-        aria-label={`Weight for set ${index + 1}`}
-        value={set.weight === 0 ? '' : set.weight}
+        ariaLabel={`Weight for set ${index + 1}`}
+        value={set.weight}
         placeholder="0"
-        onChange={(e) => patch({ weight: e.target.value === '' ? 0 : Number(e.target.value) })}
+        onCommit={(weight) => {
+          if (set.kind === 'warmup') {
+            dispatch({ type: 'update-set', exerciseId, setId: set.id, patch: { weight } })
+          } else {
+            onWeight(weight)
+          }
+        }}
       />
-      <input
+      <NumberInput
         className={set.reps > 0 ? 'num-input filled' : 'num-input'}
-        type="number"
-        inputMode="numeric"
-        step="1"
-        min="0"
-        aria-label={`Reps for set ${index + 1}`}
-        value={set.reps === 0 ? '' : set.reps}
+        ariaLabel={`Reps for set ${index + 1}`}
+        value={set.reps}
         placeholder="0"
-        onChange={(e) => {
-          const reps = e.target.value === '' ? 0 : Number(e.target.value)
-          patch({ reps })
+        integer
+        onCommit={(reps) => {
+          dispatch({ type: 'update-set', exerciseId, setId: set.id, patch: { reps } })
           // Starting the rest clock when a working set gets its first rep count
           // is the moment the set is actually over.
           if (reps > 0 && set.reps === 0 && set.kind === 'working') onLogged()

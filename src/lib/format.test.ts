@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { formatBest, formatClock, formatDuration, formatRelativeDate, formatVolume } from './format'
+import {
+  formatBest,
+  formatClock,
+  formatDuration,
+  formatRelativeDate,
+  formatVolume,
+  parseDecimalInput,
+} from './format'
 
 describe('formatVolume', () => {
   it('shows whole numbers below the compact threshold', () => {
@@ -65,5 +72,44 @@ describe('formatBest', () => {
 
   it('has nothing to show without reps', () => {
     expect(formatBest(0, 0, 'kg')).toBe('—')
+  })
+})
+
+describe('parseDecimalInput', () => {
+  it('reads a plain number', () => {
+    expect(parseDecimalInput('20')).toBe(20)
+    expect(parseDecimalInput('20.5')).toBe(20.5)
+  })
+
+  it('accepts a comma as the decimal separator', () => {
+    expect(parseDecimalInput('20,5')).toBe(20.5)
+  })
+
+  it('accepts a trailing point mid-typing without losing the digits', () => {
+    expect(parseDecimalInput('20.')).toBe(20)
+  })
+
+  it('accepts a leading point', () => {
+    expect(parseDecimalInput('.5')).toBe(0.5)
+  })
+
+  it('returns null for input that is not yet a number', () => {
+    expect(parseDecimalInput('')).toBeNull()
+    expect(parseDecimalInput('.')).toBeNull()
+    expect(parseDecimalInput('abc')).toBeNull()
+    expect(parseDecimalInput('-')).toBeNull()
+  })
+
+  it('rejects negatives, since neither a weight nor a rep count can be one', () => {
+    expect(parseDecimalInput('-5')).toBeNull()
+  })
+
+  it('rejects a decimal when whole numbers are required', () => {
+    expect(parseDecimalInput('10.5', true)).toBeNull()
+    expect(parseDecimalInput('10', true)).toBe(10)
+  })
+
+  it('ignores surrounding whitespace', () => {
+    expect(parseDecimalInput(' 20.5 ')).toBe(20.5)
   })
 })

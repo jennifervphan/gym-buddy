@@ -10,6 +10,21 @@ export function formatWeight(value: number, unit: Unit): string {
 }
 
 /**
+ * Reads a number the user may still be typing.
+ *
+ * Accepts a comma as the decimal separator, since that is what many locales'
+ * keypads produce, and returns null for anything not yet a number — "", ".",
+ * "-" — so a half-typed entry is never committed as the wrong value.
+ */
+export function parseDecimalInput(text: string, integer = false): number | null {
+  const normalised = text.trim().replace(',', '.')
+  if (normalised === '') return null
+  if (!(integer ? /^\d+$/ : /^\d*\.?\d*$/).test(normalised)) return null
+  const value = Number(normalised)
+  return Number.isFinite(value) ? value : null
+}
+
+/**
  * A best set as "60 kg × 6", or just "12 reps" for bodyweight work where the
  * load is always zero.
  */

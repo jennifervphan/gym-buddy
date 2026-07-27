@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
 import { useStore } from '../state/context'
 import { sessionVolume, sessionWorkingSets } from '../lib/stats'
+import type { Exercise } from '../types'
 import {
   formatDate,
   formatDuration,
+  formatNumber,
   formatTime,
   formatVolume,
   formatWeight,
@@ -56,6 +58,16 @@ export function History({ navigate }: { navigate: (route: Route) => void }) {
       </div>
     </div>
   )
+}
+
+/**
+ * A zero only means bodyweight on an exercise you actually do at bodyweight;
+ * on a loaded lift it means no weight was recorded, and saying "BW" there
+ * misrepresents what happened.
+ */
+function formatLoggedWeight(weight: number, exercise: Exercise | undefined): string {
+  if (weight > 0) return formatNumber(weight)
+  return exercise?.equipment === 'bodyweight' ? 'BW' : '—'
 }
 
 export function SessionDetail({
@@ -135,14 +147,14 @@ export function SessionDetail({
                   {working.map((set, i) => (
                     <tr key={set.id}>
                       <td>{i + 1}</td>
-                      <td>{set.weight === 0 ? 'BW' : set.weight}</td>
+                      <td>{formatLoggedWeight(set.weight, exercise)}</td>
                       <td>{set.reps}</td>
                     </tr>
                   ))}
                   {warmups.map((set) => (
                     <tr key={set.id}>
                       <td>Warmup</td>
-                      <td>{set.weight === 0 ? 'BW' : set.weight}</td>
+                      <td>{formatLoggedWeight(set.weight, exercise)}</td>
                       <td>{set.reps}</td>
                     </tr>
                   ))}
