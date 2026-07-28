@@ -801,6 +801,10 @@ textarea {
   max-height: 88vh;
   max-height: 88dvh;
   overflow-y: auto;
+  /* Setting overflow on one axis promotes the other from visible to auto, so
+   * this must be stated explicitly: there is nothing to see sideways, and the
+   * sticky bar's negative margins should never become something to scroll. */
+  overflow-x: hidden;
   /* Keeps a swipe that reaches the end of the list from scrolling the page
    * behind the sheet. */
   overscroll-behavior: contain;
