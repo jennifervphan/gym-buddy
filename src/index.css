@@ -870,6 +870,38 @@ textarea {
   gap: 12px;
 }
 
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Multi-select: the number shows the order the exercises will be added in. */
+.check-dot {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  border: 1.5px solid var(--border-strong);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: transparent;
+}
+
+.list-item[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--series-1) 10%, transparent);
+}
+
+.list-item[aria-pressed='true'] .check-dot {
+  background: var(--series-1);
+  border-color: transparent;
+  color: var(--accent-ink);
+}
+
 /* ---------- Charts ---------- */
 
 .chart {

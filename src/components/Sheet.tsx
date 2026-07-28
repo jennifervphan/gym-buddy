@@ -11,11 +11,14 @@ export function Sheet({
   onClose,
   children,
   footer,
+  action,
 }: {
   title: string
   onClose: () => void
   children: ReactNode
   footer?: ReactNode
+  /** Sits in the sticky header, so it stays reachable down a long list. */
+  action?: ReactNode
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -45,9 +48,12 @@ export function Sheet({
           <div className="sheet-handle" />
           <div className="sheet-head">
             <h2>{title}</h2>
-            <button type="button" className="btn icon ghost" onClick={onClose} aria-label="Close">
-              <IconX />
-            </button>
+            <div className="sheet-actions">
+              {action}
+              <button type="button" className="btn icon ghost" onClick={onClose} aria-label="Close">
+                <IconX />
+              </button>
+            </div>
           </div>
         </div>
         {children}

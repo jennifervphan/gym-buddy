@@ -431,6 +431,8 @@ export function RoutineDetail({
   const { data, dispatch } = useStore()
   const routine = data.routines.find((r) => r.id === routineId)
   const [adding, setAdding] = useState(false)
+  // Kept in tap order, so the routine ends up in the order they were chosen.
+  const [selected, setSelected] = useState<string[]>([])
 
   const byId = useMemo(() => new Map(data.exercises.map((e) => [e.id, e])), [data.exercises])
 
@@ -462,6 +464,22 @@ export function RoutineDetail({
   const available = data.exercises
     .filter((e) => !e.archived && !routine.exerciseIds.includes(e.id))
     .sort((a, b) => a.name.localeCompare(b.name))
+
+  const toggle = (id: string) =>
+    setSelected((current) =>
+      current.includes(id) ? current.filter((other) => other !== id) : [...current, id],
+    )
+
+  const closeAdding = () => {
+    setAdding(false)
+    setSelected([])
+  }
+
+  const addSelected = () => {
+    if (selected.length === 0) return
+    save({ exerciseIds: [...routine.exerciseIds, ...selected] })
+    closeAdding()
+  }
 
   return (
     <div className="page">
@@ -549,26 +567,42 @@ export function RoutineDetail({
       </button>
 
       {adding && (
-        <Sheet title="Add to routine" onClose={() => setAdding(false)}>
+        <Sheet
+          title="Add to routine"
+          onClose={closeAdding}
+          action={
+            selected.length > 0 ? (
+              <button type="button" className="btn primary sm" onClick={addSelected}>
+                Add {selected.length}
+              </button>
+            ) : null
+          }
+        >
+          <p className="muted-xs">
+            {selected.length === 0
+              ? 'Tap as many as you like, then add them all at once.'
+              : `They will be added in the order you tapped them.`}
+          </p>
           <div className="card flush">
             <div className="list">
-              {available.map((exercise) => (
-                <button
-                  key={exercise.id}
-                  type="button"
-                  className="list-item"
-                  onClick={() => {
-                    save({ exerciseIds: [...routine.exerciseIds, exercise.id] })
-                    setAdding(false)
-                  }}
-                >
-                  <div className="grow">
-                    <div className="title">{exercise.name}</div>
-                    <div className="muted-xs">{MUSCLE_GROUP_LABELS[exercise.muscleGroup]}</div>
-                  </div>
-                  <IconPlus className="chevron" />
-                </button>
-              ))}
+              {available.map((exercise) => {
+                const order = selected.indexOf(exercise.id)
+                return (
+                  <button
+                    key={exercise.id}
+                    type="button"
+                    className="list-item"
+                    aria-pressed={order !== -1}
+                    onClick={() => toggle(exercise.id)}
+                  >
+                    <div className="grow">
+                      <div className="title">{exercise.name}</div>
+                      <div className="muted-xs">{MUSCLE_GROUP_LABELS[exercise.muscleGroup]}</div>
+                    </div>
+                    <span className="check-dot">{order === -1 ? '' : order + 1}</span>
+                  </button>
+                )
+              })}
               {available.length === 0 && (
                 <div className="empty">
                   <p className="muted">Every exercise is already in this routine.</p>
@@ -576,6 +610,11 @@ export function RoutineDetail({
               )}
             </div>
           </div>
+          {selected.length > 0 && (
+            <button type="button" className="btn primary block" onClick={addSelected}>
+              Add {selected.length} {selected.length === 1 ? 'exercise' : 'exercises'}
+            </button>
+          )}
         </Sheet>
       )}
     </div>
