@@ -188,25 +188,20 @@ textarea {
   left: 0;
   right: 0;
   z-index: 30;
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 2px;
   padding: 6px 6px calc(6px + var(--safe-bottom));
   background: color-mix(in srgb, var(--surface-1) 92%, transparent);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
 }
 
-.bottom-nav > * {
-  max-width: 560px;
-}
-
 .nav-inner {
   max-width: 560px;
   margin: 0 auto;
-  width: 100%;
+  /* minmax(0, 1fr) rather than 1fr: a plain 1fr track cannot shrink below its
+   * content, so the wider labels would take more room than the narrow ones and
+   * the tabs would sit unevenly. */
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 2px;
 }
 
@@ -215,6 +210,7 @@ textarea {
   flex-direction: column;
   align-items: center;
   gap: 3px;
+  min-width: 0;
   padding: 7px 2px;
   border: none;
   background: none;
