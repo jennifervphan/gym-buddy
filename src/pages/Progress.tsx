@@ -20,6 +20,8 @@ import {
   formatWeight,
 } from '../lib/format'
 import { BarChart, LineChart } from '../components/charts'
+import { FormCueList } from '../components/FormCueList'
+import { MuscleMap } from '../components/MuscleMap'
 import { IconChevronRight, IconTrophy } from '../components/Icons'
 import type { Route } from '../lib/useRoute'
 
@@ -240,6 +242,25 @@ export function ExerciseDetail({
           {formatWeight(exercise.increment, settings.unit)} per step
         </p>
       </div>
+
+      {(exercise.form || exercise.notes) && (
+        <div className="card">
+          <div className="card-head">
+            <h2>How it's done</h2>
+          </div>
+          <MuscleMap group={exercise.muscleGroup} />
+          {exercise.form && (
+            <div style={{ marginTop: 14 }}>
+              <FormCueList cues={exercise.form} />
+            </div>
+          )}
+          {exercise.notes && (
+            <p className="muted" style={{ marginTop: 12 }}>
+              {exercise.notes}
+            </p>
+          )}
+        </div>
+      )}
 
       {plan && (
         <div className="card">

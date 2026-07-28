@@ -5,6 +5,8 @@ import { PROGRESSION_LABELS, formatBest, formatWeight, MUSCLE_GROUP_LABELS } fro
 import { planExercise, warmupSets } from '../lib/progression'
 import { blankSets, unperformedLaterSetIds } from '../lib/session'
 import { estimate1RM, recordsFor } from '../lib/stats'
+import { FormCueList } from '../components/FormCueList'
+import { MuscleMap } from '../components/MuscleMap'
 import { NumberInput } from '../components/NumberInput'
 import { RestTimer } from '../components/RestTimer'
 import { Sheet } from '../components/Sheet'
@@ -264,6 +266,7 @@ function ExerciseCard({
   const planned = entry.planned
   const records = useMemo(() => recordsFor(data.sessions, exercise.id), [data.sessions, exercise.id])
   const [showWarmup, setShowWarmup] = useState(false)
+  const [showForm, setShowForm] = useState(false)
 
   const working = entry.sets.filter((s) => s.kind === 'working')
   const warmups = entry.sets.filter((s) => s.kind === 'warmup')
@@ -334,8 +337,8 @@ function ExerciseCard({
         </div>
       )}
 
-      {suggestedWarmups.length > 0 && (
-        <div>
+      <div className="btn-row">
+        {suggestedWarmups.length > 0 && (
           <button
             type="button"
             className="btn sm ghost"
@@ -344,11 +347,31 @@ function ExerciseCard({
           >
             {showWarmup ? 'Hide' : 'Show'} suggested warmup
           </button>
-          {showWarmup && (
-            <p className="muted-xs" style={{ marginTop: 6 }}>
-              {suggestedWarmups.map((w) => `${formatWeight(w.weight, unit)} × ${w.reps}`).join('  →  ')}
-            </p>
-          )}
+        )}
+        {exercise.form && (
+          <button
+            type="button"
+            className="btn sm ghost"
+            onClick={() => setShowForm((v) => !v)}
+            aria-expanded={showForm}
+          >
+            {showForm ? 'Hide' : 'How to'} do it
+          </button>
+        )}
+      </div>
+
+      {showWarmup && suggestedWarmups.length > 0 && (
+        <p className="muted-xs">
+          {suggestedWarmups.map((w) => `${formatWeight(w.weight, unit)} × ${w.reps}`).join('  →  ')}
+        </p>
+      )}
+
+      {showForm && exercise.form && (
+        <div>
+          <MuscleMap group={exercise.muscleGroup} />
+          <div style={{ marginTop: 14 }}>
+            <FormCueList cues={exercise.form} />
+          </div>
         </div>
       )}
 

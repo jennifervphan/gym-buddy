@@ -1,5 +1,6 @@
 import type { AppData, Exercise, Routine, Settings, Unit } from '../types'
 import { SCHEMA_VERSION } from './schema'
+import { FORM_CUES } from './formCues'
 
 /**
  * Exercise defaults, expressed in kg. `buildSeed` converts the increments when
@@ -97,6 +98,7 @@ export function buildExercises(unit: Unit): Exercise[] {
     increment: unit === 'lb' ? toPoundIncrement(seed.increment) : seed.increment,
     custom: false,
     archived: false,
+    ...(FORM_CUES[seed.name] ? { form: FORM_CUES[seed.name] } : {}),
   }))
 }
 
@@ -123,7 +125,17 @@ export function mergeBuiltInExercises(existing: Exercise[], unit: Unit): Exercis
     .filter((e) => !names.has(e.name.toLowerCase()))
     .map((e) => ({ ...e, id: usedIds.has(e.id) ? nextId() : e.id }))
 
-  return additions.length === 0 ? existing : [...existing, ...additions]
+  // Reference cues are library data, not user data, so they are refreshed on
+  // every load. Everything the user can edit is left exactly as it is.
+  const refreshed = existing.map((exercise) => {
+    const cues = FORM_CUES[exercise.name.trim()]
+    if (!cues || exercise.form === cues) return exercise
+    return { ...exercise, form: cues }
+  })
+
+  const changed = refreshed.some((e, i) => e !== existing[i])
+  if (additions.length === 0) return changed ? refreshed : existing
+  return [...refreshed, ...additions]
 }
 
 export function buildSeed(unit: Unit): AppData {

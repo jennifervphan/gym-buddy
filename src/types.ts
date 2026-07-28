@@ -16,6 +16,13 @@ export type MuscleGroup =
 
 export type Equipment = 'barbell' | 'dumbbell' | 'machine' | 'cable' | 'bodyweight'
 
+/** Read-only reference for how a built-in exercise is performed. */
+export type FormCues = {
+  setup: string
+  execution: string
+  mistake: string
+}
+
 /**
  * An exercise plus the double-progression rules the planner uses for it.
  *
@@ -38,7 +45,10 @@ export type Exercise = {
   /** True for exercises the user added themselves. */
   custom: boolean
   archived: boolean
+  /** The user's own reminder. Editable; not to be confused with `form`. */
   notes?: string
+  /** Built-in reference cues. Refreshed from the library, never user-edited. */
+  form?: FormCues
 }
 
 export type SetKind = 'working' | 'warmup'

@@ -114,3 +114,45 @@ describe('upgrading a real legacy library', () => {
     for (const e of legacy) expect(merged.find((m) => m.id === e.id)?.name).toBe(e.name)
   })
 })
+
+describe('form cues', () => {
+  const library = buildExercises('kg')
+
+  it('covers every built-in exercise', () => {
+    const missing = library.filter((e) => !e.form).map((e) => e.name)
+    expect(missing).toEqual([])
+  })
+
+  it('gives each one all three cues, as complete sentences', () => {
+    for (const exercise of library) {
+      const cues = exercise.form!
+      for (const [key, text] of Object.entries(cues)) {
+        expect(text.length, `${exercise.name}.${key}`).toBeGreaterThan(20)
+        expect(text.endsWith('.'), `${exercise.name}.${key}`).toBe(true)
+      }
+    }
+  })
+
+  it('refreshes cues onto a library that predates them', () => {
+    const old = library.map(({ form: _form, ...rest }) => rest)
+    expect(old.every((e) => !('form' in e))).toBe(true)
+    const merged = mergeBuiltInExercises(old, 'kg')
+    expect(merged.every((e) => e.form)).toBe(true)
+    expect(merged).toHaveLength(library.length)
+  })
+
+  it('refreshing cues leaves the user’s own edits alone', () => {
+    const edited = library.map((e) =>
+      e.name === 'Bench Press' ? { ...e, form: undefined, repMax: 3, notes: 'mine', archived: true } : e,
+    )
+    const bench = mergeBuiltInExercises(edited, 'kg').find((e) => e.name === 'Bench Press')
+    expect(bench).toMatchObject({ repMax: 3, notes: 'mine', archived: true })
+    expect(bench?.form?.setup).toContain('Eyes under the bar')
+  })
+
+  it('leaves a custom exercise without cues', () => {
+    const custom = { ...library[0]!, id: 'mine', name: 'Zercher Squat', custom: true, form: undefined }
+    const merged = mergeBuiltInExercises([custom], 'kg')
+    expect(merged.find((e) => e.id === 'mine')?.form).toBeUndefined()
+  })
+})
