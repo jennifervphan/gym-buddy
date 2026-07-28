@@ -27,6 +27,9 @@
   --serious: #ec835a;
   --critical: #d03b3b;
 
+  /* Opaque, so the silhouette reads as one solid shape. */
+  --muscle-idle: #d5d4ce;
+
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 18px;
@@ -58,6 +61,7 @@
     --series-2: #d95926;
 
     --good-text: #0ca30c;
+    --muscle-idle: #40403d;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
   }
 }
@@ -80,6 +84,7 @@
   --series-2: #d95926;
 
   --good-text: #0ca30c;
+  --muscle-idle: #40403d;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
@@ -1082,7 +1087,37 @@ textarea {
   min-height: 42px;
 }
 
-/* ---------- Form cues ---------- */
+/* ---------- Muscle map & form cues ---------- */
+
+.muscle-map-wrap {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.muscle-map {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  display: block;
+}
+
+.muscle-map .figure {
+  fill: var(--muscle-idle);
+}
+
+.muscle-map .muscle {
+  fill: var(--series-1);
+}
+
+.muscle-map .view-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-anchor: middle;
+}
 
 .cue-list {
   display: flex;

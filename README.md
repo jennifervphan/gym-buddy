@@ -113,9 +113,13 @@ The stall limit, deload size, weekly session target and units are all configurab
 ### Exercise reference
 
 Every built-in exercise carries three cues — how to set up, how to do it, and the common mistake to
-watch for. They appear on the exercise page (Progress → tap a lift) and behind a **How to do it**
-toggle in the workout logger, so they are there when you need them and out of the way when you
-don't.
+watch for — alongside a front/back body diagram highlighting the muscle group it trains. Both appear
+on the exercise page (Progress → tap a lift) and behind a **How to do it** toggle in the workout
+logger, so they are there when you need them and out of the way when you don't.
+
+The diagram is one continuous silhouette drawn in `src/components/MuscleMap.tsx`, with the muscle
+shapes clipped to it so they can never spill past the body's edge. Both views are drawn because
+half the groups are posterior — highlighting hamstrings on a front view would say nothing.
 
 These are written reference data (`src/lib/formCues.ts`), not photographs: text costs nothing to
 ship, works offline, and cannot be subtly anatomically wrong the way a generated image can.
