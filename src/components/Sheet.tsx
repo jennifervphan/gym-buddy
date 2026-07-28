@@ -12,6 +12,7 @@ export function Sheet({
   children,
   footer,
   action,
+  subhead,
 }: {
   title: string
   onClose: () => void
@@ -19,6 +20,8 @@ export function Sheet({
   footer?: ReactNode
   /** Sits in the sticky header, so it stays reachable down a long list. */
   action?: ReactNode
+  /** Also sticky, below the title — a search field, typically. */
+  subhead?: ReactNode
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,6 +58,7 @@ export function Sheet({
               </button>
             </div>
           </div>
+          {subhead}
         </div>
         {children}
         {footer}

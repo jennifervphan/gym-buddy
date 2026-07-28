@@ -9,6 +9,7 @@ import {
   formatWeight,
 } from '../lib/format'
 import { PROGRAMS, buildProgramRoutines } from '../lib/programs'
+import { filterExercises } from '../lib/search'
 import type { Program } from '../lib/programs'
 import { Sheet } from '../components/Sheet'
 import { IconChevronRight, IconPlus, IconTrash } from '../components/Icons'
@@ -433,6 +434,7 @@ export function RoutineDetail({
   const [adding, setAdding] = useState(false)
   // Kept in tap order, so the routine ends up in the order they were chosen.
   const [selected, setSelected] = useState<string[]>([])
+  const [search, setSearch] = useState('')
 
   const byId = useMemo(() => new Map(data.exercises.map((e) => [e.id, e])), [data.exercises])
 
@@ -470,9 +472,14 @@ export function RoutineDetail({
       current.includes(id) ? current.filter((other) => other !== id) : [...current, id],
     )
 
+  // Filtering only changes what is shown; a selection made under one query
+  // survives the next one, so you can search repeatedly and add in one go.
+  const matches = filterExercises(available, search)
+
   const closeAdding = () => {
     setAdding(false)
     setSelected([])
+    setSearch('')
   }
 
   const addSelected = () => {
@@ -577,15 +584,27 @@ export function RoutineDetail({
               </button>
             ) : null
           }
+          subhead={
+            <input
+              className="input sheet-search"
+              type="search"
+              value={search}
+              placeholder="Search name, muscle or equipment"
+              aria-label="Search exercises"
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          }
         >
           <p className="muted-xs">
-            {selected.length === 0
-              ? 'Tap as many as you like, then add them all at once.'
-              : `They will be added in the order you tapped them.`}
+            {search.trim() !== ''
+              ? `${matches.length} of ${available.length} shown`
+              : selected.length === 0
+                ? 'Tap as many as you like, then add them all at once.'
+                : 'They will be added in the order you tapped them.'}
           </p>
           <div className="card flush">
             <div className="list">
-              {available.map((exercise) => {
+              {matches.map((exercise) => {
                 const order = selected.indexOf(exercise.id)
                 return (
                   <button
@@ -603,9 +622,18 @@ export function RoutineDetail({
                   </button>
                 )
               })}
-              {available.length === 0 && (
+              {matches.length === 0 && (
                 <div className="empty">
-                  <p className="muted">Every exercise is already in this routine.</p>
+                  <p className="muted">
+                    {available.length === 0
+                      ? 'Every exercise is already in this routine.'
+                      : `Nothing matches “${search.trim()}”.`}
+                  </p>
+                  {available.length > 0 && (
+                    <button type="button" className="btn sm" onClick={() => setSearch('')}>
+                      Clear search
+                    </button>
+                  )}
                 </div>
               )}
             </div>
