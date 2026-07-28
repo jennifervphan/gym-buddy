@@ -6,7 +6,6 @@ import { planExercise, warmupSets } from '../lib/progression'
 import { blankSets, unperformedLaterSetIds } from '../lib/session'
 import { estimate1RM, recordsFor } from '../lib/stats'
 import { FormCueList } from '../components/FormCueList'
-import { MuscleMap } from '../components/MuscleMap'
 import { NumberInput } from '../components/NumberInput'
 import { RestTimer } from '../components/RestTimer'
 import { Sheet } from '../components/Sheet'
@@ -366,14 +365,7 @@ function ExerciseCard({
         </p>
       )}
 
-      {showForm && exercise.form && (
-        <div>
-          <MuscleMap group={exercise.muscleGroup} />
-          <div style={{ marginTop: 14 }}>
-            <FormCueList cues={exercise.form} />
-          </div>
-        </div>
-      )}
+      {showForm && exercise.form && <FormCueList cues={exercise.form} />}
 
       {entry.sets.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

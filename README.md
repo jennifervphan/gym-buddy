@@ -113,14 +113,14 @@ The stall limit, deload size, weekly session target and units are all configurab
 ### Exercise reference
 
 Every built-in exercise carries three cues — how to set up, how to do it, and the common mistake to
-watch for — plus a front/back body diagram highlighting the muscle group it trains. Both appear on
-the exercise page (Progress → tap a lift) and behind a **How to do it** toggle in the workout
-logger, so they are there when you need them and out of the way when you don't.
+watch for. They appear on the exercise page (Progress → tap a lift) and behind a **How to do it**
+toggle in the workout logger, so they are there when you need them and out of the way when you
+don't.
 
-The cues are written reference data (`src/lib/formCues.ts`), not photographs: text costs nothing to
-ship, works offline, and cannot be subtly anatomically wrong the way a generated image can. The
-whole feature adds about 13 KiB. `Exercise.notes` remains your own field — the cues are refreshed
-from the library on load and never overwrite anything you have edited.
+These are written reference data (`src/lib/formCues.ts`), not photographs: text costs nothing to
+ship, works offline, and cannot be subtly anatomically wrong the way a generated image can.
+`Exercise.notes` remains your own field — the cues are refreshed from the library on load and never
+overwrite anything you have edited.
 
 ### Programs
 

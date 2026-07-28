@@ -21,7 +21,6 @@ import {
 } from '../lib/format'
 import { BarChart, LineChart } from '../components/charts'
 import { FormCueList } from '../components/FormCueList'
-import { MuscleMap } from '../components/MuscleMap'
 import { IconChevronRight, IconTrophy } from '../components/Icons'
 import type { Route } from '../lib/useRoute'
 
@@ -248,12 +247,7 @@ export function ExerciseDetail({
           <div className="card-head">
             <h2>How it's done</h2>
           </div>
-          <MuscleMap group={exercise.muscleGroup} />
-          {exercise.form && (
-            <div style={{ marginTop: 14 }}>
-              <FormCueList cues={exercise.form} />
-            </div>
-          )}
+          {exercise.form && <FormCueList cues={exercise.form} />}
           {exercise.notes && (
             <p className="muted" style={{ marginTop: 12 }}>
               {exercise.notes}

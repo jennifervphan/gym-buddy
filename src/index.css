@@ -27,10 +27,6 @@
   --serious: #ec835a;
   --critical: #d03b3b;
 
-  /* Opaque, so overlapping shapes in the muscle map never show a seam. */
-  --muscle-idle: #d3d2cc;
-  --muscle-neutral: #e4e3dd;
-
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 18px;
@@ -62,8 +58,6 @@
     --series-2: #d95926;
 
     --good-text: #0ca30c;
-    --muscle-idle: #3d3d3a;
-    --muscle-neutral: #2b2b29;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
   }
 }
@@ -86,8 +80,6 @@
   --series-2: #d95926;
 
   --good-text: #0ca30c;
-  --muscle-idle: #3d3d3a;
-  --muscle-neutral: #2b2b29;
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
 }
 
@@ -1090,48 +1082,7 @@ textarea {
   min-height: 42px;
 }
 
-/* ---------- Muscle map & form cues ---------- */
-
-.muscle-map-wrap {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.muscle-map {
-  width: 100%;
-  max-width: 250px;
-  height: auto;
-  display: block;
-}
-
-.muscle-map .part {
-  fill: var(--muscle-idle);
-  transition: fill 0.15s ease;
-}
-
-.muscle-map .part.neutral {
-  fill: var(--muscle-neutral);
-}
-
-.muscle-map .part.active {
-  fill: var(--series-1);
-}
-
-.muscle-map .view-label {
-  fill: var(--text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  text-anchor: middle;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .muscle-map .part {
-    transition: none;
-  }
-}
+/* ---------- Form cues ---------- */
 
 .cue-list {
   display: flex;
