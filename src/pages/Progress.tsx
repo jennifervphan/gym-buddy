@@ -11,13 +11,16 @@ import {
 import { planExercise } from '../lib/progression'
 import {
   MUSCLE_GROUP_LABELS,
-  PROGRESSION_LABELS,
+  countLabel,
+  countNoun,
   formatBest,
   formatNumber,
+  formatPrescription,
   formatRelativeDate,
   formatShortDate,
   formatVolume,
   formatWeight,
+  progressionLabel,
 } from '../lib/format'
 import { BarChart, LineChart } from '../components/charts'
 import { FormCueList } from '../components/FormCueList'
@@ -174,7 +177,9 @@ export function Progress({ navigate }: { navigate: (route: Route) => void }) {
               <div className="grow">
                 <div className="title">{exercise.name}</div>
                 <div className="muted-xs">
-                  Best {formatBest(records.bestSetWeight, records.bestSetReps, settings.unit)} ·{' '}
+                  Best{' '}
+                  {formatBest(records.bestSetWeight, records.bestSetReps, settings.unit, exercise.metric)}{' '}
+                  ·{' '}
                   {formatRelativeDate(records.lastPerformed)}
                 </div>
               </div>
@@ -196,7 +201,7 @@ export function ExerciseDetail({
 }) {
   const { data } = useStore()
   const { settings, sessions } = data
-  const [metric, setMetric] = useState<'e1rm' | 'topWeight' | 'volume'>('e1rm')
+  const [metric, setMetric] = useState<'e1rm' | 'topWeight' | 'volume' | 'bestCount'>('e1rm')
 
   const exercise = data.exercises.find((e) => e.id === exerciseId)
   const series = useMemo(() => seriesFor(sessions, exerciseId), [sessions, exerciseId])
@@ -223,14 +228,37 @@ export function ExerciseDetail({
     e1rm: 'Estimated 1RM',
     topWeight: 'Top set weight',
     volume: 'Volume per session',
+    bestCount: exercise.metric === 'seconds' ? 'Longest hold' : 'Best set',
   } as const
+
+  /*
+   * Only chart curves that can actually move. Weight, volume and a 1RM estimate
+   * are all flat zero on unloaded work, and a 1RM estimated from a hold time
+   * means nothing even when there is load on the bar.
+   */
+  const hasLoad = series.some((p) => p.topWeight > 0)
+  const chartOptions = !hasLoad
+    ? (['bestCount'] as const)
+    : exercise.metric === 'seconds'
+      ? (['bestCount', 'topWeight', 'volume'] as const)
+      : (['e1rm', 'topWeight', 'volume'] as const)
+  const chartMetric = (chartOptions as readonly string[]).includes(metric)
+    ? metric
+    : chartOptions[0]
 
   const points = series.map((p) => ({
     label: formatShortDate(p.date),
     value:
-      metric === 'e1rm' ? p.estimated1RM : metric === 'topWeight' ? p.topWeight : Math.round(p.volume),
-    detail: `${p.totalReps} reps · ${formatVolume(p.volume, settings.unit)}`,
+      chartMetric === 'e1rm'
+        ? p.estimated1RM
+        : chartMetric === 'topWeight'
+          ? p.topWeight
+          : chartMetric === 'bestCount'
+            ? p.bestCount
+            : Math.round(p.volume),
+    detail: `${p.totalReps} ${countNoun(exercise.metric)} · ${formatVolume(p.volume, settings.unit)}`,
   }))
+  const showEstimated1RM = exercise.metric !== 'seconds' && records !== null && records.best1RM > 0
 
   return (
     <div className="page">
@@ -238,7 +266,7 @@ export function ExerciseDetail({
         <div className="section-title">{MUSCLE_GROUP_LABELS[exercise.muscleGroup]}</div>
         <h1>{exercise.name}</h1>
         <p className="muted" style={{ marginTop: 4 }}>
-          {exercise.sets} sets of {exercise.repMin}–{exercise.repMax} · +
+          {exercise.sets} sets of {exercise.repMin}–{exercise.repMax} {countNoun(exercise.metric)} · +
           {formatWeight(exercise.increment, settings.unit)} per step
         </p>
       </div>
@@ -267,12 +295,18 @@ export function ExerciseDetail({
           <div className="section-title">Next session</div>
           <div className="prescription" style={{ marginTop: 8 }}>
             <span className="badge hold" style={{ alignSelf: 'flex-start' }}>
-              {PROGRESSION_LABELS[plan.kind]}
+              {progressionLabel(plan.kind, exercise.metric)}
             </span>
             <div className="target">
               {plan.weight === null
-                ? `${plan.sets} sets · ${plan.repMin}–${plan.repMax} reps`
-                : `${plan.sets} × ${plan.repTarget} @ ${formatWeight(plan.weight, settings.unit)}`}
+                ? `${plan.sets} sets · ${plan.repMin}–${plan.repMax} ${countNoun(exercise.metric)}`
+                : formatPrescription(
+                    plan.sets,
+                    plan.repTarget,
+                    plan.weight,
+                    settings.unit,
+                    exercise.metric,
+                  )}
             </div>
             <p className="reason">{plan.reason}</p>
           </div>
@@ -281,24 +315,24 @@ export function ExerciseDetail({
 
       {records && (
         <div className="stat-grid">
-          {/* Bodyweight lifts have no meaningful 1RM, so reps are the record. */}
+          {/* Bodyweight and timed work have no meaningful 1RM, so the best set is the record. */}
           <div className="stat">
             <span className="label" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <IconTrophy style={{ width: 13, height: 13 }} />
-              {records.best1RM > 0 ? 'Best est. 1RM' : 'Best set'}
+              {showEstimated1RM ? 'Best est. 1RM' : 'Best set'}
             </span>
             <span className="value">
-              {records.best1RM > 0
+              {showEstimated1RM
                 ? formatWeight(records.best1RM, settings.unit)
-                : `${records.bestSetReps} reps`}
+                : formatBest(records.bestSetWeight, records.bestSetReps, settings.unit, exercise.metric)}
             </span>
             <span className="sub">
-              {records.best1RM > 0
-                ? `from ${formatBest(records.bestSetWeight, records.bestSetReps, settings.unit)}`
+              {showEstimated1RM
+                ? `from ${formatBest(records.bestSetWeight, records.bestSetReps, settings.unit, exercise.metric)}`
                 : `${records.sessionCount} sessions logged`}
             </span>
           </div>
-          {records.best1RM > 0 && (
+          {showEstimated1RM && (
             <div className="stat">
               <span className="label">Heaviest set</span>
               <span className="value">{formatWeight(records.heaviestWeight, settings.unit)}</span>
@@ -312,7 +346,7 @@ export function ExerciseDetail({
         <div className="card">
           <div className="card-head">
             <div>
-              <h2>{metricLabels[metric]}</h2>
+              <h2>{metricLabels[chartMetric]}</h2>
               <p className="muted-xs">
                 {points.length === 1
                   ? 'One session logged — the line appears once there are two.'
@@ -320,25 +354,28 @@ export function ExerciseDetail({
               </p>
             </div>
           </div>
-          <div className="chips" style={{ marginBottom: 12 }}>
-            {(['e1rm', 'topWeight', 'volume'] as const).map((option) => (
-              <button
-                key={option}
-                type="button"
-                className="chip"
-                aria-pressed={metric === option}
-                onClick={() => setMetric(option)}
-              >
-                {metricLabels[option]}
-              </button>
-            ))}
-          </div>
+          {/* One option is not a choice, so the chips only appear when there is one. */}
+          {chartOptions.length > 1 && (
+            <div className="chips" style={{ marginBottom: 12 }}>
+              {chartOptions.map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  className="chip"
+                  aria-pressed={chartMetric === option}
+                  onClick={() => setMetric(option)}
+                >
+                  {metricLabels[option]}
+                </button>
+              ))}
+            </div>
+          )}
           <LineChart
             points={points}
             formatValue={(v) =>
-              metric === 'volume' && v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v))
+              chartMetric === 'volume' && v >= 1000 ? `${Math.round(v / 1000)}k` : String(Math.round(v))
             }
-            caption={`${metricLabels[metric]} for ${exercise.name} across ${points.length} sessions, in ${settings.unit}`}
+            caption={`${metricLabels[chartMetric]} for ${exercise.name} across ${points.length} sessions, in ${settings.unit}`}
           />
         </div>
       )}
@@ -354,8 +391,10 @@ export function ExerciseDetail({
               <tr>
                 <th scope="col">Date</th>
                 <th scope="col">Top set</th>
-                <th scope="col">Reps</th>
-                <th scope="col">Est. 1RM</th>
+                {/* Summed across the session, so say so — 3×38s is not a 114s hold. */}
+                <th scope="col">Total {countLabel(exercise.metric).toLowerCase()}</th>
+                {/* An estimate needs load; a column of dashes helps nobody. */}
+                {showEstimated1RM && <th scope="col">Est. 1RM</th>}
               </tr>
             </thead>
             <tbody>
@@ -364,7 +403,9 @@ export function ExerciseDetail({
                   <td>{formatShortDate(point.date)}</td>
                   <td>{point.topWeight === 0 ? 'BW' : formatNumber(point.topWeight, 1)}</td>
                   <td>{point.totalReps}</td>
-                  <td>{point.estimated1RM ? formatNumber(point.estimated1RM, 1) : '—'}</td>
+                  {showEstimated1RM && (
+                    <td>{point.estimated1RM ? formatNumber(point.estimated1RM, 1) : '—'}</td>
+                  )}
                 </tr>
               ))}
             </tbody>

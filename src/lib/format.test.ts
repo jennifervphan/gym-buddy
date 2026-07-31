@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
+  countLabel,
+  countNoun,
   formatBest,
   formatClock,
+  formatCount,
+  formatCountShort,
   formatDuration,
+  formatPrescription,
   formatRelativeDate,
+  formatSetRange,
   formatVolume,
   parseDecimalInput,
+  progressionLabel,
 } from './format'
 
 describe('formatVolume', () => {
@@ -72,6 +79,72 @@ describe('formatBest', () => {
 
   it('has nothing to show without reps', () => {
     expect(formatBest(0, 0, 'kg')).toBe('—')
+  })
+
+  it('marks a timed hold as seconds', () => {
+    expect(formatBest(10, 45, 'kg', 'seconds')).toBe('10 kg × 45s')
+    expect(formatBest(0, 45, 'kg', 'seconds')).toBe('45s')
+  })
+})
+
+describe('counting reps or seconds', () => {
+  it('reads a rep count in words, singular and plural', () => {
+    expect(formatCount(1)).toBe('1 rep')
+    expect(formatCount(8)).toBe('8 reps')
+  })
+
+  it('reads a hold as seconds', () => {
+    expect(formatCount(45, 'seconds')).toBe('45s')
+  })
+
+  it('drops the noun in the short form, keeping the seconds marker', () => {
+    expect(formatCountShort(8)).toBe('8')
+    expect(formatCountShort(45, 'seconds')).toBe('45s')
+  })
+
+  it('labels the column for what is being counted', () => {
+    expect(countLabel()).toBe('Reps')
+    expect(countLabel('seconds')).toBe('Secs')
+    expect(countNoun()).toBe('reps')
+    expect(countNoun('seconds')).toBe('seconds')
+  })
+})
+
+describe('formatPrescription', () => {
+  it('names the load for a weighted lift', () => {
+    expect(formatPrescription(3, 8, 60, 'kg')).toBe('3 × 8 @ 60 kg')
+  })
+
+  it('says bodyweight rather than "@ 0 kg"', () => {
+    expect(formatPrescription(3, 12, 0, 'kg')).toBe('3 × 12 at bodyweight')
+  })
+
+  it('marks a timed target as seconds', () => {
+    expect(formatPrescription(3, 45, 0, 'kg', 'seconds')).toBe('3 × 45s at bodyweight')
+    expect(formatPrescription(3, 45, 10, 'kg', 'seconds')).toBe('3 × 45s @ 10 kg')
+  })
+})
+
+describe('progressionLabel', () => {
+  it('says reps for a rep exercise and time for a hold', () => {
+    expect(progressionLabel('add-reps')).toBe('Add reps')
+    expect(progressionLabel('add-reps', 'seconds')).toBe('Add time')
+  })
+
+  it('leaves the decisions that read the same either way', () => {
+    for (const kind of ['add-weight', 'deload', 'repeat', 'finish-sets', 'first-time'] as const) {
+      expect(progressionLabel(kind, 'seconds')).toBe(progressionLabel(kind))
+    }
+  })
+})
+
+describe('formatSetRange', () => {
+  it('reads a rep prescription', () => {
+    expect(formatSetRange({ sets: 3, repMin: 8, repMax: 12, metric: 'reps' })).toBe('3×8–12')
+  })
+
+  it('marks a hold prescription with seconds', () => {
+    expect(formatSetRange({ sets: 3, repMin: 20, repMax: 45, metric: 'seconds' })).toBe('3×20–45s')
   })
 })
 

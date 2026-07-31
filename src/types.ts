@@ -16,6 +16,12 @@ export type MuscleGroup =
 
 export type Equipment = 'barbell' | 'dumbbell' | 'machine' | 'cable' | 'bodyweight'
 
+/**
+ * What a set counts. Holds like the plank are measured in seconds, so the
+ * number logged against them is a duration, not a rep count.
+ */
+export type Metric = 'reps' | 'seconds'
+
 /** Read-only reference for how a built-in exercise is performed. */
 export type FormCues = {
   setup: string
@@ -36,6 +42,8 @@ export type Exercise = {
   equipment: Equipment
   /** Working sets to perform each session. */
   sets: number
+  /** Whether repMin/repMax and the logged count are reps or seconds. */
+  metric: Metric
   repMin: number
   repMax: number
   /** How much weight to add when the top of the rep range is cleared. */

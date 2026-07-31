@@ -18,6 +18,7 @@ const bench: Exercise = {
   muscleGroup: 'chest',
   equipment: 'barbell',
   sets: 3,
+  metric: 'reps',
   repMin: 5,
   repMax: 8,
   increment: 2.5,
@@ -206,6 +207,73 @@ describe('planExercise: stalling and deloading', () => {
   })
 })
 
+describe('planExercise: time-based work', () => {
+  const plank: Exercise = {
+    ...bench,
+    id: 'plank',
+    name: 'Plank',
+    metric: 'seconds',
+    equipment: 'bodyweight',
+    repMin: 20,
+    repMax: 45,
+  }
+
+  function plankSession(day: number, sets: LoggedSet[]): Session {
+    return {
+      ...session(day, []),
+      exercises: [{ exerciseId: 'plank', planned: null, sets }],
+    }
+  }
+
+  it('counts seconds rather than reps in the explanation', () => {
+    const plan = planExercise(plank, [], settings)
+    expect(plan.reason).toContain('20–45 seconds')
+    expect(plan.reason).not.toContain('reps')
+  })
+
+  it('progresses on hold time exactly as it does on reps', () => {
+    const plan = planExercise(plank, [plankSession(1, [set(0, 30), set(0, 30), set(0, 30)])], settings)
+    expect(plan).toMatchObject({ kind: 'add-reps', repTarget: 31 })
+    expect(plan.reason).toContain('seconds')
+  })
+
+  it('adds load once every set clears the top of the hold range', () => {
+    const plan = planExercise(
+      { ...plank, equipment: 'machine' },
+      [plankSession(1, [set(10, 45), set(10, 45), set(10, 45)])],
+      settings,
+    )
+    expect(plan).toMatchObject({ kind: 'add-weight', weight: 12.5, repTarget: 20 })
+    expect(plan.reason).toContain('20 seconds')
+  })
+})
+
+describe('planExercise: bodyweight work', () => {
+  const pullup: Exercise = { ...bench, equipment: 'bodyweight', repMin: 5, repMax: 10 }
+
+  it('calls an unloaded set bodyweight rather than "0 kg"', () => {
+    const plan = planExercise(pullup, [session(1, [set(0, 6), set(0, 6), set(0, 6)])], settings)
+    expect(plan.reason).toContain('bodyweight')
+    expect(plan.reason).not.toContain('0 kg')
+  })
+
+  it('still names the load once weight is added to the belt', () => {
+    const plan = planExercise(pullup, [session(1, [set(10, 6), set(10, 6), set(10, 6)])], settings)
+    expect(plan.reason).toContain('10 kg')
+    expect(plan.reason).not.toContain('bodyweight')
+  })
+
+  it('repeats rather than "deloading" a weight that does not exist', () => {
+    const plan = planExercise(
+      pullup,
+      [session(1, [set(0, 2), set(0, 2), set(0, 2)]), session(8, [set(0, 2), set(0, 2), set(0, 2)])],
+      settings,
+    )
+    // A deload here would prescribe *adding* an increment, which is backwards.
+    expect(plan).toMatchObject({ kind: 'repeat', weight: 0 })
+  })
+})
+
 describe('planExercise: units', () => {
   it('describes the plan in pounds when that is the chosen unit', () => {
     const plan = planExercise(
@@ -291,5 +359,9 @@ describe('warmupSets', () => {
 
   it('skips warmups for weights light enough not to need them', () => {
     expect(warmupSets(15, bench)).toEqual([])
+  })
+
+  it('skips warmups for timed work, where a rep ramp means nothing', () => {
+    expect(warmupSets(100, { ...bench, metric: 'seconds' })).toEqual([])
   })
 })

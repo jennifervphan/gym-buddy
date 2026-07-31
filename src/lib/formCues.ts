@@ -163,4 +163,24 @@ export const FORM_CUES: Record<string, FormCues> = {
     execution: 'Raise your legs to hip height or above by curling your pelvis, then lower slowly.',
     mistake: 'Swinging back and forth so momentum does the work.',
   },
+  'Side Plank': {
+    setup: 'On one forearm, elbow under your shoulder, feet stacked or staggered.',
+    execution: 'Lift your hips so head, hips and heels form a line, and hold. Time each side.',
+    mistake: 'Letting the hips settle backwards so you are half-lying rather than side-on.',
+  },
+  'Dead Hang': {
+    setup: 'Hang from the bar with an overhand grip, arms straight, feet clear of the floor.',
+    execution: 'Keep your shoulders lightly engaged rather than fully slack, and hold.',
+    mistake: 'Hanging completely limp with the shoulders jammed up around the ears.',
+  },
+  "Farmer's Carry": {
+    setup: 'A heavy dumbbell in each hand, standing tall with your shoulders back.',
+    execution: 'Walk with short controlled steps, ribs down and the weights steady at your sides.',
+    mistake: 'Leaning to one side or letting the weights swing into your legs.',
+  },
+  'Wall Sit': {
+    setup: 'Back flat against a wall, feet a stride out, knees bent to about 90°.',
+    execution: 'Hold with your thighs parallel to the floor and your weight through your heels.',
+    mistake: 'Creeping upwards as it burns so the knees straighten out of position.',
+  },
 }

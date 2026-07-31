@@ -124,6 +124,20 @@ describe('seriesFor', () => {
     expect(series.map((p) => p.topWeight)).toEqual([60, 65])
     expect(series[1]).toMatchObject({ volume: 65 * 15, totalReps: 15 })
   })
+
+  it('carries the best single set, the only curve unloaded work can move', () => {
+    const series = seriesFor(
+      [
+        sessionOn('2026-02-03', [{ exerciseId: 'plank', sets: [set(0, 30), set(0, 28)] }]),
+        sessionOn('2026-02-10', [{ exerciseId: 'plank', sets: [set(0, 35), set(0, 40)] }]),
+      ],
+      'plank',
+    )
+    expect(series.map((p) => p.bestCount)).toEqual([30, 40])
+    // Everything else is flat zero without load, which is the point.
+    expect(series.map((p) => p.topWeight)).toEqual([0, 0])
+    expect(series.map((p) => p.estimated1RM)).toEqual([0, 0])
+  })
 })
 
 describe('weekStart', () => {
@@ -209,6 +223,7 @@ const bench: Exercise = {
   muscleGroup: 'chest',
   equipment: 'barbell',
   sets: 3,
+  metric: 'reps',
   repMin: 5,
   repMax: 8,
   increment: 2.5,

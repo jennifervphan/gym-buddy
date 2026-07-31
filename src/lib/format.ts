@@ -1,4 +1,4 @@
-import type { Equipment, MuscleGroup, ProgressionKind, Unit } from '../types'
+import type { Equipment, Exercise, Metric, MuscleGroup, ProgressionKind, Unit } from '../types'
 
 /** Trims trailing zeros so 62.50 reads as 62.5 and 60.00 as 60. */
 export function formatNumber(value: number, maxDecimals = 2): string {
@@ -24,13 +24,59 @@ export function parseDecimalInput(text: string, integer = false): number | null 
   return Number.isFinite(value) ? value : null
 }
 
+/** "8 reps" or "45s", depending on what the exercise counts. */
+export function formatCount(value: number, metric: Metric = 'reps'): string {
+  return metric === 'seconds' ? `${value}s` : `${value} ${value === 1 ? 'rep' : 'reps'}`
+}
+
+/** The bare count for tight spots — "8" for reps, "45s" for a hold. */
+export function formatCountShort(value: number, metric: Metric = 'reps'): string {
+  return metric === 'seconds' ? `${value}s` : String(value)
+}
+
+/** Column heading for the logged number. */
+export function countLabel(metric: Metric = 'reps'): string {
+  return metric === 'seconds' ? 'Secs' : 'Reps'
+}
+
+/** "reps" or "seconds", so prose matches what the exercise counts. */
+export function countNoun(metric: Metric = 'reps'): string {
+  return metric === 'seconds' ? 'seconds' : 'reps'
+}
+
+/** An exercise's prescription at a glance: "3×8–12", or "3×20–45s" for a hold. */
+export function formatSetRange(
+  exercise: Pick<Exercise, 'sets' | 'repMin' | 'repMax' | 'metric'>,
+): string {
+  return `${exercise.sets}×${exercise.repMin}–${exercise.repMax}${
+    exercise.metric === 'seconds' ? 's' : ''
+  }`
+}
+
 /**
- * A best set as "60 kg × 6", or just "12 reps" for bodyweight work where the
+ * A best set as "60 kg × 6", or just the count for bodyweight work where the
  * load is always zero.
  */
-export function formatBest(weight: number, reps: number, unit: Unit): string {
+export function formatBest(weight: number, reps: number, unit: Unit, metric: Metric = 'reps'): string {
   if (reps <= 0) return '—'
-  return weight > 0 ? `${formatWeight(weight, unit)} × ${reps}` : `${reps} reps`
+  return weight > 0
+    ? `${formatWeight(weight, unit)} × ${formatCountShort(reps, metric)}`
+    : formatCount(reps, metric)
+}
+
+/**
+ * The planner's prescription: "3 × 8 @ 60 kg", or "3 × 45s" where there is no
+ * load to name and "@ 0 kg" would just be noise.
+ */
+export function formatPrescription(
+  sets: number,
+  target: number,
+  weight: number,
+  unit: Unit,
+  metric: Metric = 'reps',
+): string {
+  const work = `${sets} × ${formatCountShort(target, metric)}`
+  return weight > 0 ? `${work} @ ${formatWeight(weight, unit)}` : `${work} at bodyweight`
 }
 
 /** Compact volume, e.g. "12.4k kg", for stat tiles where space is tight. */
@@ -114,6 +160,12 @@ export const PROGRESSION_LABELS: Record<ProgressionKind, string> = {
   'finish-sets': 'Finish sets',
   repeat: 'Repeat',
   deload: 'Deload',
+}
+
+/** The planner's decision, worded for what the exercise actually counts. */
+export function progressionLabel(kind: ProgressionKind, metric: Metric = 'reps'): string {
+  if (metric === 'seconds' && kind === 'add-reps') return 'Add time'
+  return PROGRESSION_LABELS[kind]
 }
 
 export const MUSCLE_GROUPS = Object.keys(MUSCLE_GROUP_LABELS) as MuscleGroup[]

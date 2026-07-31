@@ -109,6 +109,8 @@ export type ExercisePoint = {
   topWeight: number
   volume: number
   totalReps: number
+  /** The best single set's count — the only curve that moves for unloaded work. */
+  bestCount: number
 }
 
 /** Per-session series for one exercise, oldest first, for charting. */
@@ -127,6 +129,7 @@ export function seriesFor(sessions: Session[], exerciseId: string): ExercisePoin
           topWeight: perf.topWeight,
           volume: perf.volume,
           totalReps: perf.totalReps,
+          bestCount: top?.reps ?? 0,
         },
       ]
     })

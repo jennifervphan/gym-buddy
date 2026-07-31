@@ -649,6 +649,33 @@ textarea {
 
 /* ---------- Set logging ---------- */
 
+/* Reorder and remove controls, kept on one line beside the exercise name. */
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.head-actions .btn.icon[disabled] {
+  opacity: 0.3;
+}
+
+/* The exercise's place in the session, so reordering has something to read. */
+.order-pill {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--plane);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 2px;
+}
+
 .set-row {
   display: grid;
   grid-template-columns: 30px 1fr 1fr 40px;

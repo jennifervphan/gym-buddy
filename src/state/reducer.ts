@@ -15,6 +15,7 @@ export type Action =
   | { type: 'start-session'; session: Session }
   | { type: 'add-exercise'; exerciseId: string; planned: PlannedExercise | null; sets?: LoggedSet[] }
   | { type: 'remove-exercise'; exerciseId: string }
+  | { type: 'move-exercise'; exerciseId: string; to: number }
   | { type: 'add-set'; exerciseId: string; set: LoggedSet }
   | { type: 'update-set'; exerciseId: string; setId: string; patch: Partial<LoggedSet> }
   | { type: 'delete-set'; exerciseId: string; setId: string }
@@ -93,6 +94,19 @@ export function reducer(data: AppData, action: Action): AppData {
           exercises: data.activeSession.exercises.filter((e) => e.exerciseId !== action.exerciseId),
         },
       }
+    }
+
+    case 'move-exercise': {
+      if (!data.activeSession) return data
+      const { exercises } = data.activeSession
+      const from = exercises.findIndex((e) => e.exerciseId === action.exerciseId)
+      const to = Math.min(Math.max(action.to, 0), exercises.length - 1)
+      if (from === -1 || from === to) return data
+      const next = [...exercises]
+      const [moved] = next.splice(from, 1)
+      if (!moved) return data
+      next.splice(to, 0, moved)
+      return { ...data, activeSession: { ...data.activeSession, exercises: next } }
     }
 
     case 'add-set':

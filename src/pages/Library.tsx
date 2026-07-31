@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import type { Equipment, Exercise, MuscleGroup, Routine } from '../types'
+import type { Equipment, Exercise, Metric, MuscleGroup, Routine } from '../types'
 import { useStore } from '../state/context'
 import {
   EQUIPMENT,
   EQUIPMENT_LABELS,
   MUSCLE_GROUPS,
   MUSCLE_GROUP_LABELS,
+  countNoun,
+  formatSetRange,
   formatWeight,
 } from '../lib/format'
 import { PROGRAMS, buildProgramRoutines } from '../lib/programs'
@@ -52,6 +54,7 @@ export function Library({ navigate }: { navigate: (route: Route) => void }) {
     muscleGroup: 'chest',
     equipment: 'barbell',
     sets: 3,
+    metric: 'reps',
     repMin: 8,
     repMax: 12,
     increment: data.settings.unit === 'kg' ? 2.5 : 5,
@@ -152,8 +155,8 @@ export function Library({ navigate }: { navigate: (route: Route) => void }) {
                       {exercise.archived && ' (archived)'}
                     </div>
                     <div className="muted-xs">
-                      {EQUIPMENT_LABELS[exercise.equipment]} · {exercise.sets}×{exercise.repMin}–
-                      {exercise.repMax} · +{formatWeight(exercise.increment, data.settings.unit)}
+                      {EQUIPMENT_LABELS[exercise.equipment]} · {formatSetRange(exercise)} · +
+                      {formatWeight(exercise.increment, data.settings.unit)}
                     </div>
                   </div>
                   <IconChevronRight className="chevron" />
@@ -239,6 +242,19 @@ function ProgramPicker({ onClose }: { onClose: () => void }) {
   )
 }
 
+/**
+ * Switching what a set counts also moves the range, because a range that made
+ * sense as reps is nonsense as seconds — an 8–12 second plank, or a 20–45 rep
+ * curl. Only ranges still sitting in the other metric's territory are moved,
+ * so a range you deliberately set is left alone.
+ */
+function withMetric(draft: Exercise, metric: Metric): Partial<Exercise> {
+  if (metric === draft.metric) return {}
+  if (metric === 'seconds' && draft.repMax <= 20) return { metric, repMin: 20, repMax: 45 }
+  if (metric === 'reps' && draft.repMax > 20) return { metric, repMin: 8, repMax: 12 }
+  return { metric }
+}
+
 function ExerciseEditor({ exercise, onClose }: { exercise: Exercise; onClose: () => void }) {
   const { data, dispatch } = useStore()
   const [draft, setDraft] = useState<Exercise>(exercise)
@@ -247,6 +263,8 @@ function ExerciseEditor({ exercise, onClose }: { exercise: Exercise; onClose: ()
   const patch = (values: Partial<Exercise>) => setDraft((current) => ({ ...current, ...values }))
   const nameError = draft.name.trim() === ''
   const rangeError = draft.repMin >= draft.repMax
+  const timed = draft.metric === 'seconds'
+  const noun = countNoun(draft.metric)
 
   const save = () => {
     if (nameError || rangeError) return
@@ -302,6 +320,18 @@ function ExerciseEditor({ exercise, onClose }: { exercise: Exercise; onClose: ()
         </div>
 
         <div className="section-title">Progression</div>
+        <div className="field">
+          <label htmlFor="ex-metric">Each set counts</label>
+          <select
+            id="ex-metric"
+            className="select"
+            value={draft.metric}
+            onChange={(e) => patch(withMetric(draft, e.target.value as Metric))}
+          >
+            <option value="reps">Reps</option>
+            <option value="seconds">Seconds held</option>
+          </select>
+        </div>
         <div className="field-row">
           <div className="field">
             <label htmlFor="ex-sets">Working sets</label>
@@ -332,7 +362,7 @@ function ExerciseEditor({ exercise, onClose }: { exercise: Exercise; onClose: ()
         </div>
         <div className="field-row">
           <div className="field">
-            <label htmlFor="ex-repmin">Rep range low</label>
+            <label htmlFor="ex-repmin">{timed ? 'Hold range low (s)' : 'Rep range low'}</label>
             <input
               id="ex-repmin"
               className="input"
@@ -344,7 +374,7 @@ function ExerciseEditor({ exercise, onClose }: { exercise: Exercise; onClose: ()
             />
           </div>
           <div className="field">
-            <label htmlFor="ex-repmax">Rep range high</label>
+            <label htmlFor="ex-repmax">{timed ? 'Hold range high (s)' : 'Rep range high'}</label>
             <input
               id="ex-repmax"
               className="input"
@@ -382,13 +412,13 @@ function ExerciseEditor({ exercise, onClose }: { exercise: Exercise; onClose: ()
         </div>
 
         <p className="muted-xs">
-          Gym Buddy holds the weight until every set reaches {draft.repMax} reps, then adds{' '}
+          Gym Buddy holds the weight until every set reaches {draft.repMax} {noun}, then adds{' '}
           {formatWeight(draft.increment, data.settings.unit)} and rebuilds from {draft.repMin}.
         </p>
 
         {rangeError && (
           <p className="muted-xs" style={{ color: 'var(--critical)' }}>
-            The high end of the rep range needs to be above the low end.
+            The high end of the {timed ? 'hold' : 'rep'} range needs to be above the low end.
           </p>
         )}
       </div>
@@ -511,11 +541,7 @@ export function RoutineDetail({
                 <span className="set-index">{index + 1}</span>
                 <div className="grow">
                   <div className="title">{exercise?.name ?? 'Removed exercise'}</div>
-                  {exercise && (
-                    <div className="muted-xs">
-                      {exercise.sets}×{exercise.repMin}–{exercise.repMax}
-                    </div>
-                  )}
+                  {exercise && <div className="muted-xs">{formatSetRange(exercise)}</div>}
                 </div>
                 <button
                   type="button"

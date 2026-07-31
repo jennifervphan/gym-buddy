@@ -1,7 +1,16 @@
 import { useMemo, useState } from 'react'
-import type { Exercise, LoggedExercise, LoggedSet, PlannedExercise } from '../types'
+import type { Exercise, LoggedExercise, LoggedSet, Metric, PlannedExercise } from '../types'
 import { useStore } from '../state/context'
-import { PROGRESSION_LABELS, formatBest, formatWeight, MUSCLE_GROUP_LABELS } from '../lib/format'
+import {
+  countLabel,
+  countNoun,
+  formatBest,
+  formatPrescription,
+  formatSetRange,
+  formatWeight,
+  progressionLabel,
+  MUSCLE_GROUP_LABELS,
+} from '../lib/format'
 import { planExercise, warmupSets } from '../lib/progression'
 import { blankSets, unperformedLaterSetIds } from '../lib/session'
 import { estimate1RM, recordsFor } from '../lib/stats'
@@ -113,7 +122,7 @@ export function Workout({ navigate }: { navigate: (route: Route) => void }) {
         </div>
       </div>
 
-      {session.exercises.map((entry) => {
+      {session.exercises.map((entry, index) => {
         const exercise = byId.get(entry.exerciseId)
         if (!exercise) return null
         return (
@@ -121,6 +130,8 @@ export function Workout({ navigate }: { navigate: (route: Route) => void }) {
             key={entry.exerciseId}
             entry={entry}
             exercise={exercise}
+            index={index}
+            count={session.exercises.length}
             onRest={() => startRest(exercise.restSeconds)}
           />
         )
@@ -252,13 +263,27 @@ export function Workout({ navigate }: { navigate: (route: Route) => void }) {
   )
 }
 
+/**
+ * A 1RM estimate needs load to mean anything, so unloaded work — bodyweight
+ * reps, timed holds — is judged on the count instead.
+ */
+function beatsRecord(set: LoggedSet, records: NonNullable<ReturnType<typeof recordsFor>>): boolean {
+  return records.best1RM > 0
+    ? estimate1RM(set.weight, set.reps) > records.best1RM
+    : set.reps > records.bestSetReps
+}
+
 function ExerciseCard({
   entry,
   exercise,
+  index,
+  count,
   onRest,
 }: {
   entry: LoggedExercise
   exercise: Exercise
+  index: number
+  count: number
   onRest: () => void
 }) {
   const { data, dispatch } = useStore()
@@ -291,10 +316,11 @@ function ExerciseCard({
     <div className="card exercise-block">
       <div className="card-head" style={{ marginBottom: 0 }}>
         <div>
-          <h2>{exercise.name}</h2>
+          <h2>
+            <span className="order-pill">{index + 1}</span> {exercise.name}
+          </h2>
           <div className="muted-xs">
-            {MUSCLE_GROUP_LABELS[exercise.muscleGroup]} · {exercise.sets}×{exercise.repMin}–
-            {exercise.repMax}
+            {MUSCLE_GROUP_LABELS[exercise.muscleGroup]} · {formatSetRange(exercise)}
           </div>
           {exercise.notes && (
             <div className="muted-xs" style={{ marginTop: 4 }}>
@@ -302,36 +328,74 @@ function ExerciseCard({
             </div>
           )}
         </div>
+        <div className="head-actions">
+          <button
+            type="button"
+            className="btn icon ghost"
+            aria-label={`Move ${exercise.name} earlier`}
+            disabled={index === 0}
+            onClick={() => dispatch({ type: 'move-exercise', exerciseId: exercise.id, to: index - 1 })}
+          >
+            <IconArrowUp />
+          </button>
+          <button
+            type="button"
+            className="btn icon ghost"
+            aria-label={`Move ${exercise.name} later`}
+            disabled={index === count - 1}
+            onClick={() => dispatch({ type: 'move-exercise', exerciseId: exercise.id, to: index + 1 })}
+          >
+            <IconArrowDown />
+          </button>
+          <button
+            type="button"
+            className="btn icon ghost"
+            aria-label={`Remove ${exercise.name} from this session`}
+            onClick={() => {
+              if (entry.sets.length === 0 || window.confirm(`Remove ${exercise.name} and its sets?`)) {
+                dispatch({ type: 'remove-exercise', exerciseId: exercise.id })
+              }
+            }}
+          >
+            <IconTrash />
+          </button>
+        </div>
+      </div>
+
+      {/* The machine you wanted may be busy — start with whatever is free. */}
+      {index > 0 && (
         <button
           type="button"
-          className="btn icon ghost"
-          aria-label={`Remove ${exercise.name} from this session`}
-          onClick={() => {
-            if (entry.sets.length === 0 || window.confirm(`Remove ${exercise.name} and its sets?`)) {
-              dispatch({ type: 'remove-exercise', exerciseId: exercise.id })
-            }
-          }}
+          className="btn sm ghost"
+          style={{ alignSelf: 'flex-start' }}
+          onClick={() => dispatch({ type: 'move-exercise', exerciseId: exercise.id, to: 0 })}
         >
-          <IconTrash />
+          <IconArrowUp /> Do this first
         </button>
-      </div>
+      )}
 
       {planned && (
         <div className="prescription">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <span className={badgeClassFor(planned.kind)}>
-              <BadgeIcon kind={planned.kind} /> {PROGRESSION_LABELS[planned.kind]}
+              <BadgeIcon kind={planned.kind} /> {progressionLabel(planned.kind, exercise.metric)}
             </span>
             {records && (
               <span className="muted-xs">
-                Best {formatBest(records.bestSetWeight, records.bestSetReps, unit)}
+                Best {formatBest(records.bestSetWeight, records.bestSetReps, unit, exercise.metric)}
               </span>
             )}
           </div>
           <div className="target">
             {planned.weight === null
-              ? `${planned.sets} sets · ${planned.repMin}–${planned.repMax} reps`
-              : `${planned.sets} × ${planned.repTarget} @ ${formatWeight(planned.weight, unit)}`}
+              ? `${planned.sets} sets · ${planned.repMin}–${planned.repMax} ${countNoun(exercise.metric)}`
+              : formatPrescription(
+                  planned.sets,
+                  planned.repTarget,
+                  planned.weight,
+                  unit,
+                  exercise.metric,
+                )}
           </div>
           <p className="reason">{planned.reason}</p>
         </div>
@@ -380,15 +444,16 @@ function ExerciseCard({
           <div className="set-row header">
             <span>Set</span>
             <span>{unit}</span>
-            <span>Reps</span>
+            <span>{countLabel(exercise.metric)}</span>
             <span />
           </div>
-          {entry.sets.map((set, index) => (
+          {entry.sets.map((set, setIndex) => (
             <SetRow
               key={set.id}
               set={set}
-              index={index}
+              index={setIndex}
               exerciseId={exercise.id}
+              metric={exercise.metric}
               onWeight={(weight) => {
                 dispatch({ type: 'update-set', exerciseId: exercise.id, setId: set.id, patch: { weight } })
                 // Sets you haven't done yet follow the weight you just entered.
@@ -400,10 +465,7 @@ function ExerciseCard({
                 set.kind === 'working' ? working.findIndex((s) => s.id === set.id) + 1 : null
               }
               isRecord={
-                set.kind === 'working' &&
-                set.reps > 0 &&
-                records !== null &&
-                estimate1RM(set.weight, set.reps) > records.best1RM
+                set.kind === 'working' && set.reps > 0 && records !== null && beatsRecord(set, records)
               }
               onLogged={onRest}
             />
@@ -447,6 +509,7 @@ function SetRow({
   set,
   index,
   exerciseId,
+  metric,
   workingIndex,
   isRecord,
   onLogged,
@@ -455,12 +518,14 @@ function SetRow({
   set: LoggedSet
   index: number
   exerciseId: string
+  metric: Metric
   workingIndex: number | null
   isRecord: boolean
   onLogged: () => void
   onWeight: (weight: number) => void
 }) {
   const { dispatch } = useStore()
+  const noun = metric === 'seconds' ? 'Seconds' : 'Reps'
 
   return (
     <div className={set.kind === 'warmup' ? 'set-row warmup' : 'set-row'}>
@@ -480,7 +545,7 @@ function SetRow({
       />
       <NumberInput
         className={set.reps > 0 ? 'num-input filled' : 'num-input'}
-        ariaLabel={`Reps for set ${index + 1}`}
+        ariaLabel={`${noun} for set ${index + 1}`}
         value={set.reps}
         placeholder="0"
         integer

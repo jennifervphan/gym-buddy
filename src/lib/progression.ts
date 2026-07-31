@@ -8,6 +8,7 @@ import type {
   Settings,
   Unit,
 } from '../types'
+import { countNoun } from './format'
 
 /** Strip float noise from weight arithmetic without changing the value. */
 export function roundWeight(value: number): number {
@@ -16,6 +17,11 @@ export function roundWeight(value: number): number {
 
 function formatWeight(value: number, unit: Unit): string {
   return `${roundWeight(value)} ${unit}`
+}
+
+/** How a working load reads in prose — "0 kg" is really "bodyweight". */
+function formatLoad(value: number, unit: Unit): string {
+  return value > 0 ? formatWeight(value, unit) : 'bodyweight'
 }
 
 /** What actually happened for one exercise in one session. */
@@ -121,12 +127,12 @@ export function planExercise(
       weight: null,
       repTarget: exercise.repMax,
       kind: 'first-time',
-      reason: `First time logging this. Work up to a weight you can control for ${range} reps, then log what you hit.`,
+      reason: `First time logging this. Work up to a weight you can control for ${range} ${countNoun(exercise.metric)}, then log what you hit.`,
     }
   }
 
   const { topWeight, minRepsAtTopWeight: minReps, setsAtTopWeight: setsAtTop } = last
-  const w = formatWeight(topWeight, settings.unit)
+  const w = formatLoad(topWeight, settings.unit)
 
   // Cleared the top of the range on every set — time to add weight.
   if (minReps >= exercise.repMax && setsAtTop >= exercise.sets) {
@@ -136,7 +142,7 @@ export function planExercise(
       weight: next,
       repTarget: exercise.repMin,
       kind: 'add-weight',
-      reason: `You hit ${setsAtTop}×${minReps} at ${w}. Go up to ${formatWeight(next, settings.unit)} and rebuild from ${exercise.repMin} reps.`,
+      reason: `You hit ${setsAtTop}×${minReps} at ${w}. Go up to ${formatWeight(next, settings.unit)} and rebuild from ${exercise.repMin} ${countNoun(exercise.metric)}.`,
     }
   }
 
@@ -147,7 +153,7 @@ export function planExercise(
       weight: topWeight,
       repTarget: exercise.repMax,
       kind: 'finish-sets',
-      reason: `You reached ${exercise.repMax} reps at ${w} but only for ${setsAtTop} of ${exercise.sets} sets. Same weight — get all ${exercise.sets}.`,
+      reason: `You reached ${exercise.repMax} ${countNoun(exercise.metric)} at ${w} but only for ${setsAtTop} of ${exercise.sets} sets. Same weight — get all ${exercise.sets}.`,
     }
   }
 
@@ -159,20 +165,21 @@ export function planExercise(
       weight: topWeight,
       repTarget,
       kind: 'add-reps',
-      reason: `Last time: ${setsAtTop}×${minReps} at ${w}. Stay at ${w} and aim for ${repTarget} reps on every set.`,
+      reason: `Last time: ${setsAtTop}×${minReps} at ${w}. Stay at ${w} and aim for ${repTarget} ${countNoun(exercise.metric)} on every set.`,
     }
   }
 
-  // Below the range. Repeat once, then cut the weight.
+  // Below the range. Repeat once, then cut the weight — except at bodyweight,
+  // where there is nothing to cut and the only honest advice is to try again.
   const stalls = countStalls(history, topWeight, exercise.repMin)
-  if (stalls >= settings.stallLimit) {
+  if (stalls >= settings.stallLimit && topWeight > 0) {
     const next = deloadWeight(topWeight, exercise, settings)
     return {
       ...base,
       weight: next,
       repTarget: exercise.repMax,
       kind: 'deload',
-      reason: `${stalls} sessions stuck under ${exercise.repMin} reps at ${w}. Drop to ${formatWeight(next, settings.unit)} and build back up.`,
+      reason: `${stalls} sessions stuck under ${exercise.repMin} ${countNoun(exercise.metric)} at ${w}. Drop to ${formatWeight(next, settings.unit)} and build back up.`,
     }
   }
 
@@ -181,7 +188,7 @@ export function planExercise(
     weight: topWeight,
     repTarget: exercise.repMin,
     kind: 'repeat',
-    reason: `You managed ${minReps} reps at ${w}, short of ${exercise.repMin}. Repeat ${w} and get at least ${exercise.repMin}.`,
+    reason: `You managed ${minReps} ${countNoun(exercise.metric)} at ${w}, short of ${exercise.repMin}. Repeat ${w} and get at least ${exercise.repMin}.`,
   }
 }
 
@@ -222,8 +229,12 @@ export function suggestNextRoutine(routines: Routine[], sessions: Session[]): Ro
   return active[(index + 1) % active.length] ?? null
 }
 
-/** Suggested warmup ramp up to a working weight. Empty for light or bodyweight work. */
+/**
+ * Suggested warmup ramp up to a working weight. Empty for light or bodyweight
+ * work, and for time-based work, where a rep-count ramp says nothing useful.
+ */
 export function warmupSets(workingWeight: number, exercise: Exercise): { weight: number; reps: number }[] {
+  if (exercise.metric === 'seconds') return []
   if (exercise.equipment === 'bodyweight' || workingWeight < exercise.increment * 8) return []
   return [
     { weight: roundWeight(Math.max(exercise.increment, workingWeight * 0.4)), reps: 8 },

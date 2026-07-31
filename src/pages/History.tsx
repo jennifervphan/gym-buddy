@@ -3,6 +3,7 @@ import { useStore } from '../state/context'
 import { sessionVolume, sessionWorkingSets } from '../lib/stats'
 import type { Exercise } from '../types'
 import {
+  countLabel,
   formatDate,
   formatDuration,
   formatNumber,
@@ -140,7 +141,7 @@ export function SessionDetail({
                   <tr>
                     <th scope="col">Set</th>
                     <th scope="col">Weight ({settings.unit})</th>
-                    <th scope="col">Reps</th>
+                    <th scope="col">{countLabel(exercise?.metric)}</th>
                   </tr>
                 </thead>
                 <tbody>

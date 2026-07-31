@@ -125,6 +125,62 @@ describe('exercises within a session', () => {
   })
 })
 
+describe('reordering a session', () => {
+  /** Three exercises, so a move can land in the middle as well as at either end. */
+  function withThree(): AppData {
+    return {
+      ...buildSeed('kg'),
+      activeSession: {
+        ...structuredClone(active),
+        exercises: ['ex-2', 'ex-5', 'ex-9'].map((exerciseId) => ({
+          exerciseId,
+          planned: null,
+          sets: [],
+        })),
+      },
+    }
+  }
+
+  const order = (data: AppData) => data.activeSession?.exercises.map((e) => e.exerciseId)
+
+  it('promotes an exercise to the front so it can be done first', () => {
+    const data = reducer(withThree(), { type: 'move-exercise', exerciseId: 'ex-9', to: 0 })
+    expect(order(data)).toEqual(['ex-9', 'ex-2', 'ex-5'])
+  })
+
+  it('moves one position at a time in either direction', () => {
+    let data = reducer(withThree(), { type: 'move-exercise', exerciseId: 'ex-2', to: 1 })
+    expect(order(data)).toEqual(['ex-5', 'ex-2', 'ex-9'])
+    data = reducer(data, { type: 'move-exercise', exerciseId: 'ex-9', to: 1 })
+    expect(order(data)).toEqual(['ex-5', 'ex-9', 'ex-2'])
+  })
+
+  it('carries the exercise\'s logged sets with it', () => {
+    let data = reducer(withThree(), { type: 'add-set', exerciseId: 'ex-9', set: set('s1', 60, 8) })
+    data = reducer(data, { type: 'move-exercise', exerciseId: 'ex-9', to: 0 })
+    expect(data.activeSession?.exercises[0]).toMatchObject({ exerciseId: 'ex-9' })
+    expect(data.activeSession?.exercises[0]?.sets).toHaveLength(1)
+  })
+
+  it('clamps a target beyond either end rather than losing the exercise', () => {
+    const up = reducer(withThree(), { type: 'move-exercise', exerciseId: 'ex-5', to: -3 })
+    expect(order(up)).toEqual(['ex-5', 'ex-2', 'ex-9'])
+    const down = reducer(withThree(), { type: 'move-exercise', exerciseId: 'ex-5', to: 99 })
+    expect(order(down)).toEqual(['ex-2', 'ex-9', 'ex-5'])
+  })
+
+  it('ignores a move that changes nothing', () => {
+    const before = withThree()
+    expect(reducer(before, { type: 'move-exercise', exerciseId: 'ex-2', to: 0 })).toBe(before)
+    expect(reducer(before, { type: 'move-exercise', exerciseId: 'ghost', to: 0 })).toBe(before)
+  })
+
+  it('ignores a move when nothing is in progress', () => {
+    const data = buildSeed('kg')
+    expect(reducer(data, { type: 'move-exercise', exerciseId: 'ex-2', to: 0 })).toBe(data)
+  })
+})
+
 describe('library edits', () => {
   const custom: Exercise = {
     id: 'custom-1',
@@ -132,6 +188,7 @@ describe('library edits', () => {
     muscleGroup: 'quads',
     equipment: 'barbell',
     sets: 3,
+    metric: 'reps',
     repMin: 5,
     repMax: 8,
     increment: 5,

@@ -26,6 +26,19 @@ describe('the built-in library', () => {
     expect(new Set(library.map((e) => e.name)).size).toBe(library.length)
     expect(new Set(library.map((e) => e.id)).size).toBe(library.length)
   })
+
+  it('counts the holds in seconds and everything else in reps', () => {
+    const timed = library.filter((e) => e.metric === 'seconds').map((e) => e.name)
+    expect(timed).toEqual(['Plank', 'Side Plank', 'Dead Hang', "Farmer's Carry", 'Wall Sit'])
+    for (const e of library) expect(e.metric).toBe(timed.includes(e.name) ? 'seconds' : 'reps')
+  })
+
+  it('gives the holds a range in seconds rather than a rep-sized one', () => {
+    for (const e of library.filter((e) => e.metric === 'seconds')) {
+      expect(e.repMin).toBeGreaterThanOrEqual(20)
+      expect(e.repMax).toBeGreaterThan(e.repMin)
+    }
+  })
 })
 
 describe('mergeBuiltInExercises', () => {
@@ -78,6 +91,26 @@ describe('mergeBuiltInExercises', () => {
     expect(mergeBuiltInExercises([], 'kg')).toHaveLength(full.length)
   })
 
+  it('backfills the metric on a library saved before holds were timed', () => {
+    // Libraries written by an older build have no `metric` at all.
+    const legacy = full.map(({ metric: _metric, ...rest }) => rest as Exercise)
+    const merged = mergeBuiltInExercises(legacy, 'kg')
+    expect(merged.find((e) => e.name === 'Plank')?.metric).toBe('seconds')
+    expect(merged.find((e) => e.name === 'Bench Press')?.metric).toBe('reps')
+  })
+
+  it('leaves a metric the user chose alone', () => {
+    const edited = full.map((e) => (e.name === 'Plank' ? { ...e, metric: 'reps' as const } : e))
+    expect(mergeBuiltInExercises(edited, 'kg').find((e) => e.name === 'Plank')?.metric).toBe('reps')
+  })
+
+  it('defaults an unknown custom exercise to reps', () => {
+    const custom = { ...full[0]!, id: 'mine', name: 'Zercher Squat', custom: true } as Exercise
+    const { metric: _metric, ...withoutMetric } = custom
+    const merged = mergeBuiltInExercises([withoutMetric as Exercise], 'kg')
+    expect(merged.find((e) => e.id === 'mine')?.metric).toBe('reps')
+  })
+
   it('keeps a user\'s own exercises', () => {
     const custom: Exercise = { ...full[0]!, id: 'mine', name: 'Zercher Squat', custom: true }
     const merged = mergeBuiltInExercises([custom], 'kg')
@@ -100,16 +133,18 @@ describe('upgrading a real legacy library', () => {
   const full = buildExercises('kg')
 
   it('does not collide with a contiguously numbered pre-hip-machine install', () => {
-    // Before the hip machines existed the seed produced 29 exercises numbered
-    // ex-1..ex-29, so the new entries' own seed ids are already taken.
+    // An install from before the hip machines existed numbered its library
+    // ex-1..ex-N with no gaps, so the ids those entries would claim are taken.
     const legacy = full
       .filter((e) => !e.name.startsWith('Hip A'))
       .map((e, i) => ({ ...e, id: `ex-${i + 1}` }))
-    expect(legacy).toHaveLength(29)
+    const takenIds = new Set(legacy.map((e) => e.id))
 
     const merged = mergeBuiltInExercises(legacy, 'kg')
     expect(new Set(merged.map((e) => e.id)).size).toBe(merged.length)
-    expect(merged.filter((e) => e.name.startsWith('Hip A')).map((e) => e.id)).toEqual(['ex-30', 'ex-31'])
+    const hip = merged.filter((e) => e.name.startsWith('Hip A'))
+    expect(hip).toHaveLength(2)
+    for (const e of hip) expect(takenIds.has(e.id)).toBe(false)
     // Every pre-existing exercise keeps the id its logged history points at.
     for (const e of legacy) expect(merged.find((m) => m.id === e.id)?.name).toBe(e.name)
   })
