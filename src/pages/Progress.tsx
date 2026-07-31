@@ -95,7 +95,8 @@ export function Progress({ navigate }: { navigate: (route: Route) => void }) {
           </div>
           <BarChart
             points={weeks.map((w) => ({
-              label: formatShortDate(`${w.weekStart}T12:00:00.000Z`),
+              // Local noon, so the label never lands on the day either side.
+              label: formatShortDate(`${w.weekStart}T12:00:00`),
               value: Math.round(w.volume),
               detail: `${w.sessions} sessions · ${w.workingSets} sets`,
             }))}
@@ -192,6 +193,9 @@ export function Progress({ navigate }: { navigate: (route: Route) => void }) {
   )
 }
 
+/** What the exercise line chart plots. */
+type ChartChoice = 'e1rm' | 'topWeight' | 'volume' | 'bestCount'
+
 export function ExerciseDetail({
   exerciseId,
   navigate,
@@ -201,7 +205,9 @@ export function ExerciseDetail({
 }) {
   const { data } = useStore()
   const { settings, sessions } = data
-  const [metric, setMetric] = useState<'e1rm' | 'topWeight' | 'volume' | 'bestCount'>('e1rm')
+  // What the line chart plots. Named apart from `exercise.metric`, which is
+  // whether the exercise counts reps or seconds — a different thing entirely.
+  const [chartChoice, setChartChoice] = useState<ChartChoice>('e1rm')
 
   const exercise = data.exercises.find((e) => e.id === exerciseId)
   const series = useMemo(() => seriesFor(sessions, exerciseId), [sessions, exerciseId])
@@ -237,14 +243,13 @@ export function ExerciseDetail({
    * means nothing even when there is load on the bar.
    */
   const hasLoad = series.some((p) => p.topWeight > 0)
-  const chartOptions = !hasLoad
-    ? (['bestCount'] as const)
+  const chartOptions: readonly [ChartChoice, ...ChartChoice[]] = !hasLoad
+    ? ['bestCount']
     : exercise.metric === 'seconds'
-      ? (['bestCount', 'topWeight', 'volume'] as const)
-      : (['e1rm', 'topWeight', 'volume'] as const)
-  const chartMetric = (chartOptions as readonly string[]).includes(metric)
-    ? metric
-    : chartOptions[0]
+      ? ['bestCount', 'topWeight', 'volume']
+      : ['e1rm', 'topWeight', 'volume']
+  // The stored choice may not be offered for this exercise; fall back to the first.
+  const chartMetric = chartOptions.includes(chartChoice) ? chartChoice : chartOptions[0]
 
   const points = series.map((p) => ({
     label: formatShortDate(p.date),
@@ -363,7 +368,7 @@ export function ExerciseDetail({
                   type="button"
                   className="chip"
                   aria-pressed={chartMetric === option}
-                  onClick={() => setMetric(option)}
+                  onClick={() => setChartChoice(option)}
                 >
                   {metricLabels[option]}
                 </button>

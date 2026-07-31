@@ -27,10 +27,12 @@ function sessionOn(
   exercises: { exerciseId: string; sets: LoggedSet[] }[],
   finished = true,
 ): Session {
+  // Local times, not UTC: weeks are anchored to the user's own Monday, so a
+  // session "on the 2nd" has to mean the 2nd wherever the tests run.
   return {
     id: `sess-${isoDate}-${counter}`,
-    startedAt: `${isoDate}T10:00:00.000Z`,
-    ...(finished ? { finishedAt: `${isoDate}T11:00:00.000Z` } : {}),
+    startedAt: `${isoDate}T10:00:00`,
+    ...(finished ? { finishedAt: `${isoDate}T11:00:00` } : {}),
     exercises: exercises.map((e) => ({ exerciseId: e.exerciseId, planned: null, sets: e.sets })),
   }
 }
@@ -98,7 +100,7 @@ describe('recordsFor', () => {
     expect(records).toMatchObject({
       heaviestWeight: 80,
       sessionCount: 2,
-      lastPerformed: '2026-01-12T10:00:00.000Z',
+      lastPerformed: '2026-01-12T10:00:00',
     })
     // 80x3 estimates 88, ahead of 70x6 at 84 and 60x8 at 76.
     expect(records?.bestSetWeight).toBe(80)
@@ -141,16 +143,29 @@ describe('seriesFor', () => {
 })
 
 describe('weekStart', () => {
+  // Built from local components throughout: the week a session belongs to is
+  // the one the user was living in, not the one UTC happened to be in.
   it('anchors to the Monday of the containing week', () => {
-    expect(weekStart(new Date('2026-03-04T12:00:00.000Z'))).toBe('2026-03-02')
+    expect(weekStart(new Date(2026, 2, 4, 12))).toBe('2026-03-02')
   })
 
   it('treats Monday as the start of its own week', () => {
-    expect(weekStart(new Date('2026-03-02T00:00:00.000Z'))).toBe('2026-03-02')
+    expect(weekStart(new Date(2026, 2, 2, 0, 0))).toBe('2026-03-02')
   })
 
   it('keeps Sunday in the week that began the previous Monday', () => {
-    expect(weekStart(new Date('2026-03-08T23:00:00.000Z'))).toBe('2026-03-02')
+    expect(weekStart(new Date(2026, 2, 8, 23, 0))).toBe('2026-03-02')
+  })
+
+  it('keeps a late Sunday session out of the following week, west of UTC', () => {
+    // Sunday 8pm in the US is already Monday in UTC. Reading the date in UTC
+    // filed this session under the next week, breaking the streak it extended.
+    expect(weekStart(new Date(2026, 2, 8, 20, 0))).toBe('2026-03-02')
+  })
+
+  it('keeps an early Monday session out of the preceding week, east of UTC', () => {
+    // The mirror image: Monday 7am in Tokyo is still Sunday in UTC.
+    expect(weekStart(new Date(2026, 2, 9, 7, 0))).toBe('2026-03-09')
   })
 })
 
@@ -170,13 +185,17 @@ describe('weeklySummaries', () => {
 })
 
 describe('weeklyStreak', () => {
-  const now = new Date('2026-03-12T12:00:00.000Z') // Thursday of the 2026-03-09 week
+  const now = new Date(2026, 2, 12, 12) // Thursday of the 2026-03-09 week
 
+  /** `count` sessions on consecutive days from the given Monday. */
   function week(monday: string, count: number): Session[] {
+    const [y, m, d] = monday.split('-').map(Number) as [number, number, number]
     return Array.from({ length: count }, (_, i) => {
-      const day = new Date(`${monday}T10:00:00.000Z`)
-      day.setUTCDate(day.getUTCDate() + i)
-      return sessionOn(day.toISOString().slice(0, 10), [{ exerciseId: 'bench', sets: [set(60, 8)] }])
+      const day = new Date(y, m - 1, d + i)
+      const iso = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(
+        day.getDate(),
+      ).padStart(2, '0')}`
+      return sessionOn(iso, [{ exerciseId: 'bench', sets: [set(60, 8)] }])
     })
   }
 
@@ -206,7 +225,7 @@ describe('weeklyStreak', () => {
 
 describe('sessionsThisWeek', () => {
   it('counts only finished sessions in the current week', () => {
-    const now = new Date('2026-03-12T12:00:00.000Z')
+    const now = new Date(2026, 2, 12, 12)
     const sessions = [
       sessionOn('2026-03-09', [{ exerciseId: 'bench', sets: [set(60, 8)] }]),
       sessionOn('2026-03-11', [{ exerciseId: 'bench', sets: [set(60, 8)] }]),
@@ -235,7 +254,7 @@ const row: Exercise = { ...bench, id: 'row', name: 'Barbell Row', muscleGroup: '
 const fly: Exercise = { ...bench, id: 'fly', name: 'Chest Fly', muscleGroup: 'chest' }
 
 describe('volumeByMuscleGroup', () => {
-  const now = new Date('2026-03-12T12:00:00.000Z')
+  const now = new Date(2026, 2, 12, 12)
 
   it('sums by muscle group within the window, busiest first', () => {
     const sessions = [
@@ -258,7 +277,7 @@ describe('volumeByMuscleGroup', () => {
 })
 
 describe('stalePrescriptions', () => {
-  const now = new Date('2026-03-12T12:00:00.000Z')
+  const now = new Date(2026, 2, 12, 12)
 
   it('flags exercises not trained inside the window', () => {
     const sessions = [

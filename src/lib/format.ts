@@ -103,8 +103,7 @@ export function formatTime(iso: string): string {
 
 /** "Today", "Yesterday", "4 days ago", then falls back to a date. */
 export function formatRelativeDate(iso: string, now = new Date()): string {
-  const then = new Date(iso)
-  const days = Math.floor((startOfDay(now) - startOfDay(then)) / 86_400_000)
+  const days = calendarDaysBetween(new Date(iso), now)
   if (days <= 0) return 'Today'
   if (days === 1) return 'Yesterday'
   if (days < 7) return `${days} days ago`
@@ -113,8 +112,18 @@ export function formatRelativeDate(iso: string, now = new Date()): string {
   return formatShortDate(iso)
 }
 
-function startOfDay(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
+/**
+ * Whole calendar days from `from` to `to`.
+ *
+ * The local calendar dates are re-anchored in UTC before subtracting, because
+ * a day that spans a daylight-saving change is 23 or 25 hours long — dividing
+ * real elapsed time by 24 hours reports one day too few across a spring
+ * forward.
+ */
+function calendarDaysBetween(from: Date, to: Date): number {
+  const a = Date.UTC(from.getFullYear(), from.getMonth(), from.getDate())
+  const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate())
+  return Math.round((b - a) / 86_400_000)
 }
 
 /** Session length as "1h 12m", or "48m" under an hour. */

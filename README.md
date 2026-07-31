@@ -86,6 +86,9 @@ exercise and picks one of:
 | **Repeat** | Fell short of the bottom of the range | Same weight again |
 | **Deload** | Fell short twice in a row at that weight | Cut ~10% and rebuild |
 
+For a time-based exercise the same table applies with seconds in place of reps, and **Add reps**
+reads **Add time**.
+
 Two details worth knowing:
 
 - Progress is judged by your **worst set at the top weight**, not your best. Three sets of 8 counts;
@@ -102,13 +105,25 @@ The stall limit, deload size, weekly session target and units are all configurab
   Upper body and Lower body — begin a session in one tap, skipping the rotation.
 - **Workout** — the session logger. Set rows are pre-filled with the planned weight, so logging is
   just typing rep counts. Rest timer starts automatically, warmup ramps are suggested for heavy
-  work, and a trophy marks a set that beats your best estimated 1RM.
+  work, and a trophy marks a set that beats your best. Exercises can be **reordered mid-session**
+  with the up and down arrows, or sent straight to the front with **Do this first**, for when the
+  machine you planned on is busy.
 - **Progress** — weekly volume, working sets by muscle group, bodyweight over time, and per-exercise
   charts for estimated 1RM, top-set weight and volume. Every chart is backed by a table of the same
   numbers.
 - **History** — every session, with the exact sets you logged and the plan you were given.
-- **Library** — the exercise library (31 built-in exercises, fully editable, plus your own) and
+- **Library** — the exercise library (35 built-in exercises, fully editable, plus your own) and
   your routines. Sessions rotate through routines in order.
+
+### Reps or seconds
+
+Each exercise records whether a set counts **reps** or **seconds held**, set in the exercise editor.
+The metric follows the exercise everywhere: the logger's column reads *Secs*, the planner says *"aim
+for 45 seconds on every set"*, and the badge reads *Add time* rather than *Add reps*. Progression
+itself is unchanged — hold the load until every set clears the top of the range, then add weight —
+it just counts seconds instead.
+
+Five holds ship built in: Plank, Side Plank, Dead Hang, Farmer's Carry and Wall Sit.
 
 ### Exercise reference
 
@@ -156,10 +171,13 @@ longest untrained, which alternates Upper A and Upper B by itself.
   meaning much.
 - Volume is weight × reps over working sets. Warmups are logged but excluded from volume, set
   counts and progression.
-- Bodyweight exercises are logged at 0 weight (add weight for a loaded pull-up); their records are
-  reported in reps rather than an estimated 1RM. `Plank` logs seconds in the reps field.
-- Weeks run Monday to Sunday. The consistency streak counts back over weeks that hit your target;
-  the current week can only extend it, never break it.
+- Bodyweight exercises are logged at 0 weight (add weight for a loaded pull-up). Without load an
+  estimated 1RM is always zero, so their records, charts and personal bests all fall back to the
+  best set instead, and the planner repeats a stall rather than "deloading" a weight that isn't
+  there.
+- Weeks run Monday to Sunday **in your own timezone**, so a Sunday-evening session counts towards
+  the week it felt like, not the next one. The consistency streak counts back over weeks that hit
+  your target; the current week can only extend it, never break it.
 - Switching between kg and lb converts every stored weight, so your history keeps its meaning.
 
 ## Project layout

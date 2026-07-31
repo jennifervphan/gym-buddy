@@ -6,10 +6,6 @@ import { roundWeight } from './progression'
 export { SCHEMA_VERSION, STORAGE_KEY } from './schema'
 
 /**
- * Brings a stored payload up to the current schema. Only version 1 exists so
- * far; later versions add their steps here in order.
- */
-/**
  * v1 → v2 dropped the unused `rpe` field from logged sets. Stripping it keeps
  * exports clean rather than carrying a key nothing reads.
  */
@@ -23,6 +19,12 @@ function stripLegacySetFields(session: Session): Session {
   }
 }
 
+/**
+ * Brings a stored or imported payload up to the current schema, or returns null
+ * if it isn't recognisably Gym Buddy data. Version-specific steps go in here in
+ * order; anything that can be repaired unconditionally — like backfilling a
+ * newly added exercise field — rides along in `mergeBuiltInExercises`.
+ */
 export function migrate(raw: unknown): AppData | null {
   if (!raw || typeof raw !== 'object') return null
   const data = raw as Partial<AppData>

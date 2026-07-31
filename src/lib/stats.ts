@@ -144,18 +144,29 @@ export type BodyweightPoint = { date: string; weight: number }
  */
 export function bodyweightSeries(sessions: Session[]): BodyweightPoint[] {
   return sessions
-    .filter((s) => s.finishedAt && typeof s.bodyweight === 'number' && s.bodyweight > 0)
-    .map((s) => ({ date: s.startedAt, weight: s.bodyweight as number }))
+    .flatMap((s) =>
+      s.finishedAt && s.bodyweight !== undefined && s.bodyweight > 0
+        ? [{ date: s.startedAt, weight: s.bodyweight }]
+        : [],
+    )
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
-/** Monday-anchored ISO date (YYYY-MM-DD) for the week containing `date`. */
+/**
+ * Monday-anchored ISO date (YYYY-MM-DD) for the week containing `date`.
+ *
+ * Deliberately local, not UTC: a session logged at 8pm on a Sunday west of
+ * Greenwich is already Monday in UTC, and filing it under the following week
+ * would break the streak the user just extended.
+ */
 export function weekStart(date: Date): string {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()))
-  // getUTCDay is 0 for Sunday; shift so Monday is the first day of the week.
-  const offset = (d.getUTCDay() + 6) % 7
-  d.setUTCDate(d.getUTCDate() - offset)
-  return d.toISOString().slice(0, 10)
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  // getDay is 0 for Sunday; shift so Monday is the first day of the week.
+  const offset = (d.getDay() + 6) % 7
+  d.setDate(d.getDate() - offset)
+  // Formatted by hand — toISOString would convert back to UTC and undo this.
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${d.getFullYear()}-${month}-${String(d.getDate()).padStart(2, '0')}`
 }
 
 export type WeekSummary = {
@@ -186,19 +197,28 @@ export function weeklySummaries(sessions: Session[]): WeekSummary[] {
  * The current week is still in progress, so it only extends the streak; falling
  * short of the target today never breaks it.
  */
+/**
+ * The Monday a week before the given Monday key. Pure calendar arithmetic on a
+ * plain date string — stepping whole weeks in UTC can't drift, and no timezone
+ * is involved either side.
+ */
+function previousWeek(key: string): string {
+  const d = new Date(`${key}T00:00:00.000Z`)
+  d.setUTCDate(d.getUTCDate() - 7)
+  return d.toISOString().slice(0, 10)
+}
+
 export function weeklyStreak(sessions: Session[], weeklyTarget: number, now = new Date()): number {
   if (weeklyTarget <= 0) return 0
   const counts = new Map(weeklySummaries(sessions).map((w) => [w.weekStart, w.sessions]))
-  const cursor = new Date(`${weekStart(now)}T00:00:00.000Z`)
 
   let streak = 0
-  const thisWeek = counts.get(weekStart(now)) ?? 0
-  if (thisWeek >= weeklyTarget) streak += 1
-  cursor.setUTCDate(cursor.getUTCDate() - 7)
+  if ((counts.get(weekStart(now)) ?? 0) >= weeklyTarget) streak += 1
 
-  while ((counts.get(cursor.toISOString().slice(0, 10)) ?? 0) >= weeklyTarget) {
+  let cursor = previousWeek(weekStart(now))
+  while ((counts.get(cursor) ?? 0) >= weeklyTarget) {
     streak += 1
-    cursor.setUTCDate(cursor.getUTCDate() - 7)
+    cursor = previousWeek(cursor)
   }
   return streak
 }

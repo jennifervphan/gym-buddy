@@ -62,6 +62,14 @@ describe('formatRelativeDate', () => {
     expect(formatRelativeDate(new Date(2026, 2, 8).toISOString(), now)).toBe('4 days ago')
   })
 
+  it('counts whole days across a daylight-saving change', () => {
+    // 8 March 2026 is the US spring forward, so this span is 23 hours short of
+    // four 24-hour days — it is still four days ago.
+    expect(formatRelativeDate(new Date(2026, 2, 7, 9).toISOString(), new Date(2026, 2, 11, 9))).toBe(
+      '4 days ago',
+    )
+  })
+
   it('rolls up to weeks', () => {
     expect(formatRelativeDate(new Date(2026, 2, 4).toISOString(), now)).toBe('Last week')
     expect(formatRelativeDate(new Date(2026, 1, 12).toISOString(), now)).toBe('4 weeks ago')

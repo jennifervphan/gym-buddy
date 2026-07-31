@@ -12,6 +12,7 @@ import {
   MUSCLE_GROUP_LABELS,
 } from '../lib/format'
 import { planExercise, warmupSets } from '../lib/progression'
+import { filterExercises } from '../lib/search'
 import { blankSets, unperformedLaterSetIds } from '../lib/session'
 import { estimate1RM, recordsFor } from '../lib/stats'
 import { FormCueList } from '../components/FormCueList'
@@ -62,6 +63,7 @@ export function Workout({ navigate }: { navigate: (route: Route) => void }) {
   const session = data.activeSession
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null)
   const [adding, setAdding] = useState(false)
+  const [search, setSearch] = useState('')
   const [confirmFinish, setConfirmFinish] = useState(false)
 
   const byId = useMemo(() => new Map(data.exercises.map((e) => [e.id, e])), [data.exercises])
@@ -99,6 +101,12 @@ export function Workout({ navigate }: { navigate: (route: Route) => void }) {
   const available = data.exercises
     .filter((e) => !e.archived && !session.exercises.some((entry) => entry.exerciseId === e.id))
     .sort((a, b) => a.name.localeCompare(b.name))
+  const matches = filterExercises(available, search)
+
+  const closeAdding = () => {
+    setAdding(false)
+    setSearch('')
+  }
 
   return (
     <div className="page">
@@ -205,10 +213,23 @@ export function Workout({ navigate }: { navigate: (route: Route) => void }) {
       )}
 
       {adding && (
-        <Sheet title="Add exercise" onClose={() => setAdding(false)}>
+        <Sheet
+          title="Add exercise"
+          onClose={closeAdding}
+          subhead={
+            <input
+              className="input sheet-search"
+              type="search"
+              value={search}
+              placeholder="Search name, muscle or equipment"
+              aria-label="Search exercises"
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          }
+        >
           <div className="card flush">
             <div className="list">
-              {available.map((exercise) => (
+              {matches.map((exercise) => (
                 <button
                   key={exercise.id}
                   type="button"
@@ -221,19 +242,30 @@ export function Workout({ navigate }: { navigate: (route: Route) => void }) {
                       planned,
                       sets: blankSets(planned, () => crypto.randomUUID()),
                     })
-                    setAdding(false)
+                    closeAdding()
                   }}
                 >
                   <div className="grow">
                     <div className="title">{exercise.name}</div>
-                    <div className="muted-xs">{MUSCLE_GROUP_LABELS[exercise.muscleGroup]}</div>
+                    <div className="muted-xs">
+                      {MUSCLE_GROUP_LABELS[exercise.muscleGroup]} · {formatSetRange(exercise)}
+                    </div>
                   </div>
                   <IconPlus className="chevron" />
                 </button>
               ))}
-              {available.length === 0 && (
+              {matches.length === 0 && (
                 <div className="empty">
-                  <p className="muted">Every exercise in your library is already in this session.</p>
+                  <p className="muted">
+                    {available.length === 0
+                      ? 'Every exercise in your library is already in this session.'
+                      : `Nothing matches “${search.trim()}”.`}
+                  </p>
+                  {available.length > 0 && (
+                    <button type="button" className="btn sm" onClick={() => setSearch('')}>
+                      Clear search
+                    </button>
+                  )}
                 </div>
               )}
             </div>

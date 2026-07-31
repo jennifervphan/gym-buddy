@@ -297,13 +297,6 @@ textarea {
   color: var(--text-primary);
 }
 
-.divider {
-  height: 1px;
-  background: var(--border);
-  border: none;
-  margin: 0;
-}
-
 /* ---------- Buttons ---------- */
 
 .btn {
@@ -492,13 +485,6 @@ textarea {
 .stat .sub {
   font-size: 0.74rem;
   color: var(--text-secondary);
-}
-
-.hero-figure {
-  font-size: 3rem;
-  font-weight: 680;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
 }
 
 /* ---------- Forms ---------- */
